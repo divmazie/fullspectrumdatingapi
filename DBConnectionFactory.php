@@ -39,8 +39,9 @@ final class DBConnectionFactory {
         $table = $this->escape($table);
         $sql = "SELECT * FROM $table ";
         if ($wheres) {
+            $sql .= "WHERE ";
             foreach($wheres as $key=>$val) {
-                $sql .= $this->escape($key).' = '.$this->escape($val).' ';
+                $sql .= $this->escape($key)." = '".$this->escape($val)."' ";
             }
         }
         $result = $this->conn->query($sql);

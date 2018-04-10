@@ -52,9 +52,9 @@ class SignupEmail extends DBObject {
         $db = DBConnectionFactory::Instance();
         $email = strtolower($email);
         $values = [self::$columns['email']['name'] => $email];
-        $records = $db->select(self::$tableName,$values);
+        $records = $db->select(SignupEmail::$tableName,$values);
         $emailObject = false;
-        if (count($records)==1) {
+        if (count($records)>=1) {
             $emailObject = new SignupEmail($records[0],true);
         }
         return $emailObject;

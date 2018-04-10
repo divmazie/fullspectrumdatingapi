@@ -43,3 +43,8 @@ if ($resource[0]=='signup-emails') {
 }
 
 echo json_encode($response);
+
+function debug_die($object) {
+    echo json_encode($object);
+    die;
+}
