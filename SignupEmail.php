@@ -60,4 +60,15 @@ class SignupEmail extends DBObject {
         return $emailObject;
     }
 
+    static function getEmailObjectBySignupid($signupid) {
+        $db = DBConnectionFactory::Instance();
+        $values = [self::$columns['id']['name'] => $signupid];
+        $records = $db->select(SignupEmail::$tableName,$values);
+        $emailObject = false;
+        if (count($records)>=1) {
+            $emailObject = new SignupEmail($records[0],true);
+        }
+        return $emailObject;
+    }
+
 }

@@ -35,6 +35,12 @@ if ($resource[0]=='signup-emails') {
         } else {
             $response['errorMessage'] = 'That email is already signed up!';
         }
+    } else if ($resource[1]=='get-by-signupid') {
+        $signupid = $data;
+        $emailObj = SignupEmail::getEmailObjectBySignupid($signupid);
+        $return_vals = $emailObj->getValues();
+        $response['status'] = 1;
+        $response['data'] = $return_vals;
     } else {
         $response['errorMessage'] = 'Unrecognized resource';
     }
