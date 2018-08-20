@@ -5,11 +5,11 @@ spl_autoload_register(function ($class_name) {
 
 $allowed_origins = ["http://fullspectrumdating.com","http://localhost:4200"];
 
-header('Content-Type: application/json');
 if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'],$allowed_origins)) {
     header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
 }
 header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+header('Content-Type: application/json');
 $response = ['status' => 0];
 
 $request = json_decode($_POST['request']);
@@ -17,7 +17,7 @@ $resource = explode('/',$request->resource);
 $data = $request->data;
 
 if ($resource[0]=='signup-emails') {
-    if ($resource[1]=='get-all' && false) {
+    if ($resource[1] == 'get-all' && false) {
         $emails = SignupEmail::getAllSignupEmails();
         $return_vals = [];
         foreach ($emails as $email) {
@@ -25,7 +25,7 @@ if ($resource[0]=='signup-emails') {
         }
         $response['status'] = 1;
         $response['data'] = $return_vals;
-    } else if ($resource[1]=='save') {
+    } else if ($resource[1] == 'save') {
         $email = $data;
         $emailObj = SignupEmail::getEmailObject($email);
         if (!$emailObj) {
@@ -35,12 +35,39 @@ if ($resource[0]=='signup-emails') {
         } else {
             $response['errorMessage'] = 'That email is already signed up!';
         }
-    } else if ($resource[1]=='get-by-signupid') {
+    } else if ($resource[1] == 'get-by-signupid') {
         $signupid = $data;
         $emailObj = SignupEmail::getEmailObjectBySignupid($signupid);
         $return_vals = $emailObj->getValues();
         $response['status'] = 1;
         $response['data'] = $return_vals;
+    } else {
+        $response['errorMessage'] = 'Unrecognized resource';
+    }
+} else if ($resource[0]=='accounts') {
+    if ($resource[1]=='create') {
+        $email = $data->email;
+        $password_hash = $data->password_hash;
+        $accountObj = Account::getAccountObj($email);
+        if (!$accountObj) {
+            $accountObj = Account::newAccount($email,$password_hash);
+            $success = $accountObj->saveToDB(true);
+            $response['status'] = $success ? 1 : 0;
+        } else {
+            $response['errorMessage'] = 'Account already exists';
+        }
+    } else if ($resource[1]=='signin') {
+        $email = $data->email;
+        $password_hash = $data->password_hash;
+        $accountObj = Account::getAccountObj($email);
+        if ($accountObj) {
+            $authentic = $accountObj->authenticate($password_hash);
+            if ($authentic) {
+                $response['status'] = $authentic ? 1 : 0;
+            } else {
+                $response['errorMessage'] = 'Incorrect password';
+            }
+        }
     } else {
         $response['errorMessage'] = 'Unrecognized resource';
     }
