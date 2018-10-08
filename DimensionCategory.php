@@ -37,5 +37,15 @@ class DimensionCategory extends DBObject {
         return false;
     }
 
+    static function getDimensionCategories() {
+        $db = DBConnectionFactory::Instance();
+        $records = $db->select(DimensionCategory::$tableName);
+        $dimension_categories = [];
+        foreach($records as $record) {
+            $dimension_categories[] = new DimensionCategory($record,true);
+        }
+        return $dimension_categories;
+    }
+
 
 }

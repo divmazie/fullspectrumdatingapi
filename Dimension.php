@@ -37,5 +37,16 @@ class Dimension extends DBObject {
         return false;
     }
 
+    static function getDimensions() {
+        $db = DBConnectionFactory::Instance();
+        $records = $db->select(Dimension::$tableName);
+        $dimensions = [];
+        foreach($records as $record) {
+            $dimensions[] = new Dimension($record,true);
+        }
+        error_log('$dimensions = '.print_r($dimensions,true));
+        return $dimensions;
+    }
+
 
 }

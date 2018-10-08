@@ -18,11 +18,12 @@ class Api {
     }
 
     public function getResponse() {
-        $nextResource = array_slice($this->resource,1,null,true);
+        // $nextResource = array_slice($this->resource,1,null,true);
         switch ($this->resource[0]) {
-            case 'signup-emails': $this->signupEmailsResource($nextResource); break;
-            case 'accounts': $this->accountsResource($nextResource); break;
-            default: $this->setError('Unrecognized resource'); break;
+            case 'signup-emails': $this->signupEmailsResource(); break;
+            case 'accounts': $this->accountsResource(); break;
+            case 'dimensions': $this->dimensionsResource(); break;
+            default: $this->setError('Unrecognized resource: '.$this->resource[0]); break;
         }
         return $this->response->getResponse();
     }
@@ -32,20 +33,27 @@ class Api {
         $this->response->setErrorMessage($message);
     }
 
-    private function signupEmailsResource($resource) {
-        switch ($resource[0]) {
+    private function signupEmailsResource() {
+        switch ($this->resource[1]) {
             case 'get-all': $this->signupEmailsGetAll(); break;
             case 'save': $this->signupEmailSave(); break;
             case 'get-by-signupid': $this->signupEmailGetBySignupId(); break;
-            default: $this->setError('Unrecognized resource'); break;
+            default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
     }
 
-    private function accountsResource($resource) {
-        switch ($resource[0]) {
+    private function accountsResource() {
+        switch ($this->resource[1]) {
             case 'create': $this->accountCreate(); break;
             case 'signin': $this->accountSignin(); break;
-            default: $this->setError('Unrecognized resource'); break;
+            default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
+        }
+    }
+
+    private function dimensionsResource() {
+        switch ($this->resource[1]) {
+            case 'get-all': $this->dimensionsGetAll(); break;
+            default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
     }
 
@@ -103,6 +111,21 @@ class Api {
                 $this->setError('Incorrect password');
             }
         }
+    }
+
+    private function dimensionsGetAll() {
+        $dimensions_objs = Dimension::getDimensions();
+        $dimension_categories_objs = DimensionCategory::getDimensionCategories();
+        $dimensions = [];
+        $dimension_categories = [];
+        foreach ($dimensions_objs as $dim) {
+            $dimensions[] = $dim->getValues();
+        }
+        foreach ($dimension_categories_objs as $dim_cat) {
+            $dimension_categories[] = $dim_cat->getValues();
+        }
+        $this->response->setStatus(1);
+        $this->response->setData(['dimensions'=>$dimensions,'dimension_categories'=>$dimension_categories]);
     }
 
 }
