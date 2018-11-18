@@ -84,6 +84,8 @@ abstract class DBObject {
                 }
             }
             return true;
+        } else {
+            error_log('Column names not set correctly in DBObject');
         }
         return false;
     }

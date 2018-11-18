@@ -8,7 +8,7 @@
 
 class Account extends DBObject {
 
-    static $tableName = 'signup_emails';
+    static $tableName = 'accounts';
     static $columns = [
         'id'=>['name'=>'id','primary_key'=>true],
         'email'=>['name'=>'email'],

@@ -16,7 +16,8 @@ $request = json_decode($_POST['request']);
 $resource = explode('/',$request->resource);
 $data = $request->data;
 
-$api = new Api($resource,$data);
+$ip_address = $_SERVER['REMOTE_ADDR'];
+$api = new Api($resource,$data,$ip_address);
 $response = $api->getResponse();
 
 echo json_encode($response);

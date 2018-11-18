@@ -9,11 +9,13 @@
 class Api {
     private $resource;
     private $passedData;
+    private $ip_address;
     private $response;
 
-    function __construct($resource,$passedData) {
+    function __construct($resource,$passedData,$ip_address) {
         $this->resource = $resource;
         $this->passedData = $passedData;
+        $this->ip_address = $ip_address;
         $this->response = new ApiResponse();
     }
 
@@ -93,7 +95,8 @@ class Api {
         $accountObj = Account::getAccountObj($email);
         if (!$accountObj) {
             $accountObj = Account::newAccount($email,$password_hash);
-            $success = $accountObj->saveToDB(true);
+            $success = $accountObj->saveToDB();
+            $this->response->setData(['id'=> $accountObj->getValue('id')]);
             $this->response->setStatus($success ? 1 : 0);
         } else {
             $this->setError('Account already exists');
@@ -109,6 +112,18 @@ class Api {
             $this->response->setStatus($authentic ? 1 : 0);
             if (!$authentic) {
                 $this->setError('Incorrect password');
+            } else {
+                $values = [
+                    'account' => $accountObj->getValue('id'),
+                    'ip_address' => $this->ip_address,
+                    'session_hash' => md5($accountObj->getValue('email').$this->ip_address.time()),
+                    'active' => true
+                    ];
+                $sessionObj = new Session($values, false);
+                $sessionObj->saveToDB();
+                $this->response->setData(
+                    ['session_id'=>$sessionObj->getValue('id'),
+                        'session_hash'=>$sessionObj->getValue('session_hash')]);
             }
         }
     }

@@ -44,7 +44,7 @@ class Dimension extends DBObject {
         foreach($records as $record) {
             $dimensions[] = new Dimension($record,true);
         }
-        error_log('$dimensions = '.print_r($dimensions,true));
+        // error_log('$dimensions = '.print_r($dimensions,true));
         return $dimensions;
     }
 
