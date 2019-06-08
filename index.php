@@ -15,9 +15,10 @@ $response = ['status' => 0];
 $request = json_decode($_POST['request']);
 $resource = explode('/',$request->resource);
 $data = $request->data;
+$session_info = $request->session_info;
 
 $ip_address = $_SERVER['REMOTE_ADDR'];
-$api = new Api($resource,$data,$ip_address);
+$api = new Api($resource,$data,$ip_address,$session_info);
 $response = $api->getResponse();
 
 echo json_encode($response);

@@ -20,30 +20,25 @@ class Session extends DBObject
         'active' => ['name' => 'active']
     ];
 
-    protected function getColumnNames()
-    {
-        $names = [];
-        foreach (self::$columns as $column) {
-            $names[] = $column['name'];
-        }
-        return $names;
+    static function getColumns() {
+        return self::$columns;
     }
 
-    protected function getTableName()
+    static function getTableName()
     {
         return self::$tableName;
     }
 
-    protected function getPrimaryKey()
-    {
-        foreach (self::$columns as $column) {
-            if ($column['primary_key']) {
-                return $column['name'];
-            }
+    static function getSessionObj($session_id) {
+        $db = DBConnectionFactory::Instance();
+        $values = [self::$columns['id']['name'] => $session_id];
+        $records = $db->select(Account::$tableName,$values);
+        $sessionObj = false;
+        if (count($records)>=1) {
+            $sessionObj = new Account($records[0],true);
         }
-        return false;
+        return $sessionObj;
     }
-
 
 
 }

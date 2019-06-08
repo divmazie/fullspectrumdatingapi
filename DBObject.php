@@ -2,15 +2,46 @@
 
 abstract class DBObject {
 
-    abstract protected function getColumnNames();
-    abstract protected function getTableName();
-    abstract protected function getPrimaryKey();
+    abstract static function getColumns();
+    abstract static function getTableName();
 
     protected $db, $values, $inDB, $syncedToDB;
 
-    function __construct($record,$fromDB) {
+    function __construct($record=false,$fromDB=false) {
         $this->db = DBConnectionFactory::Instance();
-        $this->setValues($record,$fromDB);
+        if ($record) {
+            $this->setValues($record, $fromDB);
+        }
+    }
+
+    static function getObjectById($id,$class) {
+        $db = DBConnectionFactory::Instance();
+        $empty_class = new $class();
+        $values = [$empty_class->getPrimaryKey() => $id];
+        $records = $db->select($empty_class->getTableName(),$values);
+        $obj = false;
+        if (count($records)>=1) {
+            $obj = new $class($records[0],true);
+        }
+        return $obj;
+    }
+
+    protected function getColumnNames() {
+        $names = [];
+        foreach ($this->getColumns() as $column) {
+            $names[] = $column['name'];
+        }
+        return $names;
+    }
+
+    protected function getPrimaryKey()
+    {
+        foreach ($this->getColumns() as $column) {
+            if ($column['primary_key']) {
+                return $column['name'];
+            }
+        }
+        return false;
     }
 
     private function setValues($values,$fromDB) {
@@ -35,7 +66,15 @@ abstract class DBObject {
         return true;
     }
 
-    public function getValues() {
+    public function getValues($expandForeignRecords=false) {
+        if ($expandForeignRecords) {
+            foreach ($this->getColumns() as $column) {
+                if (array_key_exists('foreign_key',$column) && !$this->values[$column['name'].'_values']) {
+                    $foreign_obj = $column['foreign_table']::getObjectById($this->getValue($column['name']),$column['foreign_table']);
+                    $this->values[$column['name'].'_values'] = $foreign_obj->getValues();
+                }
+            }
+        }
         return $this->values;
     }
 
@@ -97,5 +136,6 @@ abstract class DBObject {
             $this->db->update($this->getTableName(),$primary,$this->values);
             $this->syncedToDB = true;
         }
+        return $this->syncedToDB;
     }
 }

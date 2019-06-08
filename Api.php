@@ -10,12 +10,16 @@ class Api {
     private $resource;
     private $passedData;
     private $ip_address;
+    private $session_info, $session;
     private $response;
 
-    function __construct($resource,$passedData,$ip_address) {
+    function __construct($resource,$passedData,$ip_address,$session_info) {
         $this->resource = $resource;
         $this->passedData = $passedData;
         $this->ip_address = $ip_address;
+        $this->session_info = $session_info;
+        $session = Session::getObjectById($this->session_info->id,Session::class);
+        $this->session = $session;
         $this->response = new ApiResponse();
     }
 
@@ -33,6 +37,18 @@ class Api {
     private function setError($message) {
         $this->response->setStatus(0);
         $this->response->setErrorMessage($message);
+    }
+
+    private function authenticated() {
+        if ($this->session !== false) {
+            if ($this->session->getValue('session_hash') === $this->session_info->hash
+                && $this->session->getValue('ip_address') === $this->ip_address
+                && $this->session->getValue('active') === '1') {
+                return true;
+            }
+        }
+        $this->setError('Authentication invalid');
+        return false;
     }
 
     private function signupEmailsResource() {
@@ -55,6 +71,7 @@ class Api {
     private function dimensionsResource() {
         switch ($this->resource[1]) {
             case 'get-all': $this->dimensionsGetAll(); break;
+            case 'get-identities': $this->identitiesGetAll(); break;
             default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
     }
@@ -141,6 +158,29 @@ class Api {
         }
         $this->response->setStatus(1);
         $this->response->setData(['dimensions'=>$dimensions,'dimension_categories'=>$dimension_categories]);
+    }
+
+    private function identitiesGetAll() {
+        if (!$this->authenticated()) {
+            return false;
+        }
+        $dimensions_objs = Dimension::getDimensions();
+        $dimensions = [];
+        foreach ($dimensions_objs as $dim) {
+            $dimensions[] = $dim->getValues();
+        }
+        $dimension_categories_objs = DimensionCategory::getDimensionCategories();
+        $dimension_categories = [];
+        foreach ($dimension_categories_objs as $dim_cat) {
+            $dimension_categories[] = $dim_cat->getValues();
+        }
+        $identity_objs = Identity::getAllIdentities($this->session->getValue('account'),$dimensions);
+        $identities = [];
+        foreach ($identity_objs as $id_obj) {
+            $identities[] = $id_obj->getValues(true);
+        }
+        $this->response->setStatus(1);
+        $this->response->setData(['identities'=>$identities,'dimensions'=>$dimensions,'dimension_categories'=>$dimension_categories]);
     }
 
 }

@@ -10,25 +10,12 @@ class SignupEmail extends DBObject {
         'invited_time'=>['name'=>'invited_time']
     ];
 
-    protected function getColumnNames() {
-        $names = [];
-        foreach(self::$columns as $column) {
-            $names[] = $column['name'];
-        }
-        return $names;
+    static function getColumns() {
+        return self::$columns;
     }
 
-    protected function getTableName() {
+    static function getTableName() {
         return self::$tableName;
-    }
-
-    protected function getPrimaryKey() {
-        foreach(self::$columns as $column) {
-            if ($column['primary_key']) {
-                return $column['name'];
-            }
-        }
-        return false;
     }
 
     static function getAllSignupEmails() {
