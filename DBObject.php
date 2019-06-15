@@ -44,7 +44,7 @@ abstract class DBObject {
         return false;
     }
 
-    private function setValues($values,$fromDB) {
+    public function setValues($values,$fromDB) {
         $this->values = [];
         foreach($this->getColumnNames() as $column) {
             if (isset($values[$column])) {
@@ -69,7 +69,7 @@ abstract class DBObject {
     public function getValues($expandForeignRecords=false) {
         if ($expandForeignRecords) {
             foreach ($this->getColumns() as $column) {
-                if (array_key_exists('foreign_key',$column) && !$this->values[$column['name'].'_values']) {
+                if (array_key_exists('foreign_key',$column) && !array_key_exists($column['name'].'_values',$this->values)) {
                     $foreign_obj = $column['foreign_table']::getObjectById($this->getValue($column['name']),$column['foreign_table']);
                     $this->values[$column['name'].'_values'] = $foreign_obj->getValues();
                 }
@@ -105,6 +105,7 @@ abstract class DBObject {
                 return $this->updateDB();
             }
         } else if ($this->getValue($primarykey)==null) {
+            //error_log('Inserting into DB: '.json_encode($this->getValues()));
             return $this->insertIntoDB($skipUpdate);
         }
     }
@@ -120,6 +121,8 @@ abstract class DBObject {
                 if (count($records)==1) {
                     $this->setValues($records[0],true);
                     return true;
+                } else {
+                    error_log('Object not inserted into DB! LastID: '.$last_id);
                 }
             }
             return true;

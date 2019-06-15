@@ -12,6 +12,8 @@ header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Ac
 header('Content-Type: application/json');
 $response = ['status' => 0];
 
+error_log('Index touched');
+
 $request = json_decode($_POST['request']);
 $resource = explode('/',$request->resource);
 $data = $request->data;

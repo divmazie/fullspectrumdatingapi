@@ -57,7 +57,7 @@ final class DBConnectionFactory {
         $sql = "INSERT INTO $table (";
         $first = true;
         foreach ($values as $key=>$val) {
-            if ($val) {
+            if (!empty($val)) {
                 $sql .= ($first ? '' : ',') . $this->escape($key);
                 $first = false;
             }
@@ -65,12 +65,13 @@ final class DBConnectionFactory {
         $sql .= ') VALUES (';
         $first = true;
         foreach ($values as $key=>$val) {
-            if ($val) {
+            if (!empty($val)) {
                 $sql .= ($first ? '' : ',') . "'".$this->escape($val)."'";
                 $first = false;
             }
         }
         $sql .= ')';
+        //error_log('SQL: '.$sql);
         $result = $this->conn->query($sql);
         return $result;
     }
@@ -80,7 +81,7 @@ final class DBConnectionFactory {
         $sql = "UPDATE $table SET ";
         $first = true;
         foreach ($values as $key=>$val) {
-            if ($val && $key!=$primary['key']) {
+            if (!empty($val) && $key!=$primary['key']) {
                 $sql .= ($first ? '' : ', ') . $this->escape($key) . "='" . $this->escape($val) . "'";
                 $first = false;
             }

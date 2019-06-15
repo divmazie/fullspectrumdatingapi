@@ -20,11 +20,11 @@ class Api {
         $this->session_info = $session_info;
         $session = Session::getObjectById($this->session_info->id,Session::class);
         $this->session = $session;
-        $this->response = new ApiResponse();
+        $this->response = new ApiResponse($resource);
     }
 
     public function getResponse() {
-        // $nextResource = array_slice($this->resource,1,null,true);
+        error_log(json_encode($this->resource));
         switch ($this->resource[0]) {
             case 'signup-emails': $this->signupEmailsResource(); break;
             case 'accounts': $this->accountsResource(); break;
@@ -72,6 +72,9 @@ class Api {
         switch ($this->resource[1]) {
             case 'get-all': $this->dimensionsGetAll(); break;
             case 'get-identities': $this->identitiesGetAll(); break;
+            case 'save-identity': $this->saveIdentity(); break;
+            case 'get-preferences': $this->preferencesGetAll(); break;
+            case 'save-preference': $this->savePreference(); break;
             default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
     }
@@ -181,6 +184,49 @@ class Api {
         }
         $this->response->setStatus(1);
         $this->response->setData(['identities'=>$identities,'dimensions'=>$dimensions,'dimension_categories'=>$dimension_categories]);
+    }
+
+    private function saveIdentity() {
+        if (!$this->authenticated()) {
+            return false;
+        }
+        $identity = Identity::getObjectById($this->passedData->id,Identity::class);
+        foreach ($this->passedData as $column => $datum) {
+            $identity->setValue($column,$datum,true);
+        }
+    }
+
+    private function preferencesGetAll() {
+        if (!$this->authenticated()) {
+            return false;
+        }
+        $dimensions_objs = Dimension::getDimensions();
+        $dimensions = [];
+        foreach ($dimensions_objs as $dim) {
+            $dimensions[] = $dim->getValues();
+        }
+        $dimension_categories_objs = DimensionCategory::getDimensionCategories();
+        $dimension_categories = [];
+        foreach ($dimension_categories_objs as $dim_cat) {
+            $dimension_categories[] = $dim_cat->getValues();
+        }
+        $preference_objs = Preference::getAllPreferences($this->session->getValue('account'),$dimensions);
+        $preferences = [];
+        foreach ($preference_objs as $pref_obj) {
+            $preferences[] = $pref_obj->getValues(true);
+        }
+        $this->response->setStatus(1);
+        $this->response->setData(['preferences'=>$preferences,'dimensions'=>$dimensions,'dimension_categories'=>$dimension_categories]);
+    }
+
+    private function savePreference() {
+        if (!$this->authenticated()) {
+            return false;
+        }
+        $preference = Preference::getObjectById($this->passedData->id,Preference::class);
+        foreach ($this->passedData as $column => $datum) {
+            $preference->setValue($column,$datum,true);
+        }
     }
 
 }

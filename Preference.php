@@ -6,9 +6,9 @@
  * Time: 2:17 PM
  */
 
-class Identity extends DBObject {
+class Preference extends DBObject {
 
-    static $tableName = 'identities';
+    static $tableName = 'preferences';
     static $columns = [
         'id'=>['name'=>'id','primary_key'=>true],
         'account_id'=>['name'=>'account_id','foreign_key'=>true,'foreign_table'=>Account::class],
@@ -26,32 +26,32 @@ class Identity extends DBObject {
         return self::$tableName;
     }
 
-    static function getAllIdentities($account_id,$dimensions) {
+    static function getAllPreferences($account_id,$dimensions) {
         $db = DBConnectionFactory::Instance();
         $values = [self::$columns['account_id']['name']=>$account_id];
-        $records = $db->select(Identity::$tableName,$values);
-        $identities = [];
-        $identity_lookup = [];
+        $records = $db->select(Preference::$tableName,$values);
+        $preferences = [];
+        $preference_lookup = [];
         foreach($records as $record) {
-            $identity = new Identity($record,true);
-            $identities[] = $identity;
-            $identity_lookup[$identity->getValue('dimension_id')] = $identity;
+            $preference = new Preference($record,true);
+            $preferences[] = $preference;
+            $preference_lookup[$preference->getValue('dimension_id')] = $preference;
         }
         foreach ($dimensions as $dimension) {
             $dimension_id = $dimension['id'];
-            if (!array_key_exists($dimension_id,$identity_lookup)) {
+            if (!array_key_exists($dimension_id,$preference_lookup)) {
                 $values = ['account_id'=>$account_id,
                             'dimension_id'=>$dimension_id,
                             'yesNo'=>0,
                             'slider'=>1];
-                $identity = new Identity($values,false);
-                //error_log(json_encode($identity->getValues()));
-                $identity->saveToDB();
-                $identities[] = $identity;
-                $identity_lookup[$dimension_id] = $identity;
+                $preference = new Preference($values,false);
+                //error_log(json_encode($preference->getValues()));
+                $preference->saveToDB();
+                $preferences[] = $preference;
+                $preference_lookup[$dimension_id] = $preference;
             }
         }
-        return $identities;
+        return $preferences;
     }
 
 }
