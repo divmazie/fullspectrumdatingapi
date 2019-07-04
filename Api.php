@@ -29,6 +29,7 @@ class Api {
             case 'signup-emails': $this->signupEmailsResource(); break;
             case 'accounts': $this->accountsResource(); break;
             case 'dimensions': $this->dimensionsResource(); break;
+            case 'profiles': $this->profilesResource(); break;
             default: $this->setError('Unrecognized resource: '.$this->resource[0]); break;
         }
         return $this->response->getResponse();
@@ -75,6 +76,13 @@ class Api {
             case 'save-identity': $this->saveIdentity(); break;
             case 'get-preferences': $this->preferencesGetAll(); break;
             case 'save-preference': $this->savePreference(); break;
+            default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
+        }
+    }
+
+    private function profilesResource() {
+        switch ($this->resource[1]) {
+            case 'get-matches': $this->getMatches(); break;
             default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
     }
@@ -232,6 +240,38 @@ class Api {
         foreach ($this->passedData as $column => $datum) {
             $preference->setValue($column,$datum,true);
         }
+    }
+
+    private function getMatches() {
+        if (!$this->authenticated()) {
+            return false;
+        }
+        $returnMatches = [];
+        $matches = Profile::getMatches();
+        foreach ($matches as $match) {
+            $returnMatch = $match->getValues();
+            $identities = Identity::getAllIdentities($match->getValue('id'));
+            usort($identities,function($a,$b) {
+                return $a->getValue('yesNo')*$a->getValue('slider') - $b->getValue('yesNo')*$b->getValue('slider');
+            });
+            $top_identities = [];
+            for ($i=0; $i<3; $i++) {
+                $top_identities[] = $identities[count($identities)-$i-1]->getDimension()->getValues();
+            }
+            $returnMatch['top_identities'] = $top_identities;
+            $preferences = Preference::getAllPreferences($match->getValue('id'));
+            usort($preferences,function($a,$b) {
+                return $a->getValue('yesNo')*$a->getValue('slider') - $b->getValue('yesNo')*$b->getValue('slider');
+            });
+            $top_preferences = [];
+            for ($i=0; $i<3; $i++) {
+                $top_preferences[] = $preferences[count($identities)-$i-1]->getDimension()->getValues();
+            }
+            $returnMatch['top_preferences'] = $top_preferences;
+            $returnMatches[] = $returnMatch;
+        }
+        $this->response->setStatus(1);
+        $this->response->setData(['matches'=>$returnMatches]);
     }
 
 }

@@ -33,12 +33,23 @@ class Profile extends DBObject
         $db = DBConnectionFactory::Instance();
         $values = [Profile::getColumns()['account_id']['name'] => $account->getValue('id')];
         $results = $db->select(Profile::getTableName(),$values);
-        error_log(json_encode($row));
+        //error_log(json_encode($results));
         if (count($results)>0) {
             $profileObj = new Profile($results[0]);
             return $profileObj;
         }
         return false;
+    }
+
+    static function getMatches() {
+        $db = DBConnectionFactory::Instance();
+        $matches = [];
+        $results = $db->select(Profile::getTableName());
+        foreach ($results as $row) {
+            $profileObj = new Profile($row);
+            $matches[] = $profileObj;
+        }
+        return $matches;
     }
 
 

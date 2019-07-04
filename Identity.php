@@ -26,7 +26,7 @@ class Identity extends DBObject {
         return self::$tableName;
     }
 
-    static function getAllIdentities($profile_id,$dimensions) {
+    static function getAllIdentities($profile_id,$dimensions=false) {
         $db = DBConnectionFactory::Instance();
         $values = [self::$columns['profile_id']['name']=>$profile_id];
         $records = $db->select(Identity::$tableName,$values);
@@ -36,6 +36,13 @@ class Identity extends DBObject {
             $identity = new Identity($record,true);
             $identities[] = $identity;
             $identity_lookup[$identity->getValue('dimension_id')] = $identity;
+        }
+        if (!$dimensions) {
+            $dimensions_objs = Dimension::getDimensions();
+            $dimensions = [];
+            foreach ($dimensions_objs as $dim) {
+                $dimensions[] = $dim->getValues();
+            }
         }
         foreach ($dimensions as $dimension) {
             $dimension_id = $dimension['id'];
@@ -52,6 +59,11 @@ class Identity extends DBObject {
             }
         }
         return $identities;
+    }
+
+    public function getDimension() {
+        $dim = Dimension::getObjectById($this->getValue('dimension_id'),Dimension::class);
+        return $dim;
     }
 
 }

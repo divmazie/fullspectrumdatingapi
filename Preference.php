@@ -26,7 +26,7 @@ class Preference extends DBObject {
         return self::$tableName;
     }
 
-    static function getAllPreferences($profile_id,$dimensions) {
+    static function getAllPreferences($profile_id,$dimensions=false) {
         $db = DBConnectionFactory::Instance();
         $values = [self::$columns['profile_id']['name']=>$profile_id];
         $records = $db->select(Preference::$tableName,$values);
@@ -36,6 +36,13 @@ class Preference extends DBObject {
             $preference = new Preference($record,true);
             $preferences[] = $preference;
             $preference_lookup[$preference->getValue('dimension_id')] = $preference;
+        }
+        if (!$dimensions) {
+            $dimensions_objs = Dimension::getDimensions();
+            $dimensions = [];
+            foreach ($dimensions_objs as $dim) {
+                $dimensions[] = $dim->getValues();
+            }
         }
         foreach ($dimensions as $dimension) {
             $dimension_id = $dimension['id'];
@@ -52,6 +59,10 @@ class Preference extends DBObject {
             }
         }
         return $preferences;
+    }
+
+    public function getDimension() {
+        return Dimension::getObjectById($this->getValue('dimension_id'),Dimension::class);
     }
 
 }
