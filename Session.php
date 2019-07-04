@@ -12,7 +12,8 @@ class Session extends DBObject
     static $tableName = 'sessions';
     static $columns = [
         'id' => ['name' => 'id', 'primary_key' => true],
-        'account' => ['name' => 'account', 'foreign_key' => true],
+        'account' => ['name' => 'account', 'foreign_key' => true, 'foreign_table' => Account::class],
+        'profile' => ['name' => 'profile', 'foreign_key' => true, 'foreign_table' => Profile::class],
         'signon_time' => ['name' => 'signon_time'],
         'last_action_time' => ['name' => 'last_action_time'],
         'ip_address' => ['name' => 'ip_address'],

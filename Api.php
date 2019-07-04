@@ -116,6 +116,8 @@ class Api {
         if (!$accountObj) {
             $accountObj = Account::newAccount($email,$password_hash);
             $success = $accountObj->saveToDB();
+            $profileObj = Profile::newProfie($accountObj);
+            $profileObj->saveToDB();
             $this->response->setData(['id'=> $accountObj->getValue('id')]);
             $this->response->setStatus($success ? 1 : 0);
         } else {
@@ -133,12 +135,15 @@ class Api {
             if (!$authentic) {
                 $this->setError('Incorrect password');
             } else {
+                $profileObj = Profile::getProfileByAccount($accountObj);
                 $values = [
                     'account' => $accountObj->getValue('id'),
+                    'profile' => $profileObj->getValue('id'),
                     'ip_address' => $this->ip_address,
                     'session_hash' => md5($accountObj->getValue('email').$this->ip_address.time()),
                     'active' => true
                     ];
+                //error_log(json_encode($profileObj->getValues()));
                 $sessionObj = new Session($values, false);
                 $sessionObj->saveToDB();
                 $this->response->setData(
@@ -177,7 +182,7 @@ class Api {
         foreach ($dimension_categories_objs as $dim_cat) {
             $dimension_categories[] = $dim_cat->getValues();
         }
-        $identity_objs = Identity::getAllIdentities($this->session->getValue('account'),$dimensions);
+        $identity_objs = Identity::getAllIdentities($this->session->getValue('profile'),$dimensions);
         $identities = [];
         foreach ($identity_objs as $id_obj) {
             $identities[] = $id_obj->getValues(true);
@@ -210,7 +215,7 @@ class Api {
         foreach ($dimension_categories_objs as $dim_cat) {
             $dimension_categories[] = $dim_cat->getValues();
         }
-        $preference_objs = Preference::getAllPreferences($this->session->getValue('account'),$dimensions);
+        $preference_objs = Preference::getAllPreferences($this->session->getValue('profile'),$dimensions);
         $preferences = [];
         foreach ($preference_objs as $pref_obj) {
             $preferences[] = $pref_obj->getValues(true);

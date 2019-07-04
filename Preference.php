@@ -11,7 +11,7 @@ class Preference extends DBObject {
     static $tableName = 'preferences';
     static $columns = [
         'id'=>['name'=>'id','primary_key'=>true],
-        'account_id'=>['name'=>'account_id','foreign_key'=>true,'foreign_table'=>Account::class],
+        'profile_id'=>['name'=>'profile_id','foreign_key'=>true,'foreign_table'=>Profile::class],
         'dimension_id'=>['name'=>'dimension_id','foreign_key'=>true,'foreign_table'=>Dimension::class],
         'yesNo'=>['name'=>'yesNo'],
         'slider'=>['name'=>'slider'],
@@ -26,9 +26,9 @@ class Preference extends DBObject {
         return self::$tableName;
     }
 
-    static function getAllPreferences($account_id,$dimensions) {
+    static function getAllPreferences($profile_id,$dimensions) {
         $db = DBConnectionFactory::Instance();
-        $values = [self::$columns['account_id']['name']=>$account_id];
+        $values = [self::$columns['profile_id']['name']=>$profile_id];
         $records = $db->select(Preference::$tableName,$values);
         $preferences = [];
         $preference_lookup = [];
@@ -40,7 +40,7 @@ class Preference extends DBObject {
         foreach ($dimensions as $dimension) {
             $dimension_id = $dimension['id'];
             if (!array_key_exists($dimension_id,$preference_lookup)) {
-                $values = ['account_id'=>$account_id,
+                $values = ['profile_id'=>$profile_id,
                             'dimension_id'=>$dimension_id,
                             'yesNo'=>0,
                             'slider'=>1];
