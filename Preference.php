@@ -38,14 +38,10 @@ class Preference extends DBObject {
             $preference_lookup[$preference->getValue('dimension_id')] = $preference;
         }
         if (!$dimensions) {
-            $dimensions_objs = Dimension::getDimensions();
-            $dimensions = [];
-            foreach ($dimensions_objs as $dim) {
-                $dimensions[] = $dim->getValues();
-            }
+            $dimensions = Dimension::getDimensions();
         }
         foreach ($dimensions as $dimension) {
-            $dimension_id = $dimension['id'];
+            $dimension_id = $dimension->getValue('id');
             if (!array_key_exists($dimension_id,$preference_lookup)) {
                 $values = ['profile_id'=>$profile_id,
                             'dimension_id'=>$dimension_id,
@@ -63,6 +59,10 @@ class Preference extends DBObject {
 
     public function getDimension() {
         return Dimension::getObjectById($this->getValue('dimension_id'),Dimension::class);
+    }
+
+    public function vectorValue() {
+        return $this->getValue('yesNo')*$this->getValue('slider');
     }
 
 }

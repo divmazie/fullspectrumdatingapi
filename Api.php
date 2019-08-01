@@ -56,7 +56,7 @@ class Api {
         switch ($this->resource[1]) {
             case 'get-all': $this->signupEmailsGetAll(); break;
             case 'save': $this->signupEmailSave(); break;
-            case 'get-by-signupid': $this->signupEmailGetBySignupId(); break;
+            case 'get-by-invite-code': $this->signupEmailGetByInviteCode(); break;
             default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
     }
@@ -83,6 +83,9 @@ class Api {
     private function profilesResource() {
         switch ($this->resource[1]) {
             case 'get-matches': $this->getMatches(); break;
+            case 'get-match': $this->getMatch(); break;
+            case 'user-profile': $this->getUserProfile(); break;
+            case 'save-preferred-name': $this->savePreferredName(); break;
             default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
     }
@@ -109,12 +112,16 @@ class Api {
         }
     }
 
-    private function signupEmailGetBySignupId() {
-        $signupid = $this->passedData;
-        $emailObj = SignupEmail::getEmailObjectBySignupid($signupid);
-        $return_vals = $emailObj->getValues();
-        $this->response->setStatus(1);
-        $this->response->setData($return_vals);
+    private function signupEmailGetByInviteCode() {
+        $invite_code = $this->passedData;
+        $emailObj = SignupEmail::getByInviteCode($invite_code);
+        if ($emailObj) {
+            $return_vals = $emailObj->getValues();
+            $this->response->setStatus(1);
+            $this->response->setData($return_vals);
+        } else {
+            $this->response->setErrorMessage('Cannot find signup email!');
+        }
     }
 
     private function accountCreate() {
@@ -125,6 +132,8 @@ class Api {
             $accountObj = Account::newAccount($email,$password_hash);
             $success = $accountObj->saveToDB();
             $profileObj = Profile::newProfie($accountObj);
+            $initial_name = explode('@',$email)[0];
+            $profileObj->setValue(Profile::getColumns()['preferred_name']['name'],$initial_name);
             $profileObj->saveToDB();
             $this->response->setData(['id'=> $accountObj->getValue('id')]);
             $this->response->setStatus($success ? 1 : 0);
@@ -156,7 +165,8 @@ class Api {
                 $sessionObj->saveToDB();
                 $this->response->setData(
                     ['session_id'=>$sessionObj->getValue('id'),
-                        'session_hash'=>$sessionObj->getValue('session_hash')]);
+                        'session_hash'=>$sessionObj->getValue('session_hash'),
+                        'userprofile'=>$profileObj->getValues()]);
             }
         }
     }
@@ -181,19 +191,19 @@ class Api {
             return false;
         }
         $dimensions_objs = Dimension::getDimensions();
-        $dimensions = [];
-        foreach ($dimensions_objs as $dim) {
-            $dimensions[] = $dim->getValues();
-        }
         $dimension_categories_objs = DimensionCategory::getDimensionCategories();
         $dimension_categories = [];
         foreach ($dimension_categories_objs as $dim_cat) {
             $dimension_categories[] = $dim_cat->getValues();
         }
-        $identity_objs = Identity::getAllIdentities($this->session->getValue('profile'),$dimensions);
+        $identity_objs = Identity::getAllIdentities($this->session->getValue('profile'),$dimensions_objs);
         $identities = [];
         foreach ($identity_objs as $id_obj) {
             $identities[] = $id_obj->getValues(true);
+        }
+        $dimensions = [];
+        foreach ($dimensions_objs as $dim) {
+            $dimensions[] = $dim->getValues();
         }
         $this->response->setStatus(1);
         $this->response->setData(['identities'=>$identities,'dimensions'=>$dimensions,'dimension_categories'=>$dimension_categories]);
@@ -214,19 +224,19 @@ class Api {
             return false;
         }
         $dimensions_objs = Dimension::getDimensions();
-        $dimensions = [];
-        foreach ($dimensions_objs as $dim) {
-            $dimensions[] = $dim->getValues();
-        }
         $dimension_categories_objs = DimensionCategory::getDimensionCategories();
         $dimension_categories = [];
         foreach ($dimension_categories_objs as $dim_cat) {
             $dimension_categories[] = $dim_cat->getValues();
         }
-        $preference_objs = Preference::getAllPreferences($this->session->getValue('profile'),$dimensions);
+        $preference_objs = Preference::getAllPreferences($this->session->getValue('profile'),$dimensions_objs);
         $preferences = [];
         foreach ($preference_objs as $pref_obj) {
             $preferences[] = $pref_obj->getValues(true);
+        }
+        $dimensions = [];
+        foreach ($dimensions_objs as $dim) {
+            $dimensions[] = $dim->getValues();
         }
         $this->response->setStatus(1);
         $this->response->setData(['preferences'=>$preferences,'dimensions'=>$dimensions,'dimension_categories'=>$dimension_categories]);
@@ -252,7 +262,7 @@ class Api {
             $returnMatch = $match->getValues();
             $identities = Identity::getAllIdentities($match->getValue('id'));
             usort($identities,function($a,$b) {
-                return $a->getValue('yesNo')*$a->getValue('slider') - $b->getValue('yesNo')*$b->getValue('slider');
+                return $a->vectorValue() - $b->vectorValue();
             });
             $top_identities = [];
             for ($i=0; $i<3; $i++) {
@@ -261,17 +271,88 @@ class Api {
             $returnMatch['top_identities'] = $top_identities;
             $preferences = Preference::getAllPreferences($match->getValue('id'));
             usort($preferences,function($a,$b) {
-                return $a->getValue('yesNo')*$a->getValue('slider') - $b->getValue('yesNo')*$b->getValue('slider');
+                return $a->vectorValue() - $b->vectorValue();
             });
             $top_preferences = [];
             for ($i=0; $i<3; $i++) {
-                $top_preferences[] = $preferences[count($identities)-$i-1]->getDimension()->getValues();
+                $top_preferences[] = $preferences[count($preferences)-$i-1]->getDimension()->getValues();
             }
             $returnMatch['top_preferences'] = $top_preferences;
             $returnMatches[] = $returnMatch;
         }
         $this->response->setStatus(1);
         $this->response->setData(['matches'=>$returnMatches]);
+    }
+
+    private function getMatch() {
+        if (!$this->authenticated()) {
+            return false;
+        }
+        $dimensions = Dimension::getDimensions();
+        $profile = Profile::getObjectById($this->session->getValue('profile'),Profile::class);
+        $match = Profile::getObjectById($this->passedData,Profile::class);
+        $match_identities = Identity::getAllIdentities($match->getValue('id'),$dimensions);
+        $match_preferences = Preference::getAllPreferences($match->getValue('id'),$dimensions);
+        $profile_identities = Identity::getAllIdentities($profile->getValue('id'),$dimensions);
+        $profile_preferences = Preference::getAllPreferences($profile->getValue('id'),$dimensions);
+        $youLikeThem = [];
+        $theyLikeYou = [];
+        $youNotLikeThem = [];
+        foreach ($match_identities as $them) {
+            foreach ($profile_preferences as $you) {
+                if ($you->getValue('dimension_id') == $them->getValue('dimension_id')) {
+                    break;
+                }
+            }
+            $match_value = $you->vectorValue() * $them->vectorValue();
+            if ($match_value > 0) {
+                $youLikeThem[] = ['dimension' => $you->getDimension()->getValues(true),
+                    'match_value' => $match_value,
+                    'not' => $them->vectorValue()<0];
+            } else if ($match_value < 0) {
+                $youNotLikeThem[] = ['dimension' => $you->getDimension()->getValues(true),
+                    'match_value' => $match_value,
+                    'not' => $them->vectorValue()<0];
+            }
+        }
+        foreach ($profile_identities as $you) {
+            foreach ($match_preferences as $them) {
+                if ($you->getValue('dimension_id') == $them->getValue('dimension_id')) {
+                    break;
+                }
+            }
+            $match_value = $you->vectorValue() * $them->vectorValue();
+            if ($match_value > 0) {
+                $theyLikeYou[] = ['dimension' => $you->getDimension()->getValues(true),
+                    'match_value' => $match_value,
+                    'not' => $you->vectorValue()<0];
+            }
+        }
+        $this->response->setStatus(1);
+        $resp_data = ['match'=>$match->getValues(),
+            'theyLikeYou' => $theyLikeYou,
+            'youLikeThem' => $youLikeThem,
+            'youNotLikeThem' => $youNotLikeThem];
+        $this->response->setData($resp_data);
+    }
+
+    private function getUserProfile() {
+        if (!$this->authenticated()) {
+            return false;
+        }
+        $profile = Profile::getObjectById($this->session->getValue('profile'),Profile::class);
+        $this->response->setStatus(1);
+        $this->response->setData($profile->getValues());
+    }
+
+    private function savePreferredName() {
+        if (!$this->authenticated()) {
+            return false;
+        }
+        $profile = Profile::getObjectById($this->session->getValue('profile'),Profile::class);
+        $profile->setValue('preferred_name',$this->passedData,true);
+        $this->response->setStatus(1);
+        $this->response->setData($profile->getValues());
     }
 
 }

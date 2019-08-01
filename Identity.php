@@ -38,14 +38,10 @@ class Identity extends DBObject {
             $identity_lookup[$identity->getValue('dimension_id')] = $identity;
         }
         if (!$dimensions) {
-            $dimensions_objs = Dimension::getDimensions();
-            $dimensions = [];
-            foreach ($dimensions_objs as $dim) {
-                $dimensions[] = $dim->getValues();
-            }
+            $dimensions = Dimension::getDimensions();
         }
         foreach ($dimensions as $dimension) {
-            $dimension_id = $dimension['id'];
+            $dimension_id = $dimension->getValue('id');
             if (!array_key_exists($dimension_id,$identity_lookup)) {
                 $values = ['profile_id'=>$profile_id,
                             'dimension_id'=>$dimension_id,
@@ -64,6 +60,10 @@ class Identity extends DBObject {
     public function getDimension() {
         $dim = Dimension::getObjectById($this->getValue('dimension_id'),Dimension::class);
         return $dim;
+    }
+
+    public function vectorValue() {
+        return $this->getValue('yesNo')*$this->getValue('slider');
     }
 
 }

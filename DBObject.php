@@ -71,7 +71,10 @@ abstract class DBObject {
             foreach ($this->getColumns() as $column) {
                 if (array_key_exists('foreign_key',$column) && !array_key_exists($column['name'].'_values',$this->values)) {
                     $foreign_obj = $column['foreign_table']::getObjectById($this->getValue($column['name']),$column['foreign_table']);
-                    $this->values[$column['name'].'_values'] = $foreign_obj->getValues();
+                    // This will break with circular references!!!
+                    if ($foreign_obj) {
+                        $this->values[$column['name'] . '_values'] = $foreign_obj->getValues(true);
+                    }
                 }
             }
         }

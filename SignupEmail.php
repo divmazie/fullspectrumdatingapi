@@ -7,7 +7,8 @@ class SignupEmail extends DBObject {
         'id'=>['name'=>'id','primary_key'=>true],
         'email'=>['name'=>'email'],
         'signup_time'=>['name'=>'signup_time'],
-        'invited_time'=>['name'=>'invited_time']
+        'invited_time'=>['name'=>'invited_time'],
+        'invite_code'=>['name'=>'invite_code']
     ];
 
     static function getColumns() {
@@ -47,9 +48,9 @@ class SignupEmail extends DBObject {
         return $emailObject;
     }
 
-    static function getEmailObjectBySignupid($signupid) {
+    static function getByInviteCode($invite_code) {
         $db = DBConnectionFactory::Instance();
-        $values = [self::$columns['id']['name'] => $signupid];
+        $values = [self::$columns['invite_code']['name'] => '*'.$invite_code];
         $records = $db->select(SignupEmail::$tableName,$values);
         $emailObject = false;
         if (count($records)>=1) {

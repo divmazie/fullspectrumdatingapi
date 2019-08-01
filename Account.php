@@ -13,7 +13,7 @@ class Account extends DBObject {
         'id'=>['name'=>'id','primary_key'=>true],
         'email'=>['name'=>'email'],
         'creation_time'=>['name'=>'creation_time'],
-        'signupEmail_id'=>['name'=>'SignupEmail_id','foreign_key'=>true],
+        'signupEmail_id'=>['name'=>'SignupEmail_id','foreign_key'=>true, 'foreign_table'=>SignupEmail::class],
         'password_hash'=>['name'=>'password_hash']
     ];
 
