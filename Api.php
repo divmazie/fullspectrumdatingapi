@@ -107,6 +107,10 @@ class Api {
             $emailObj = SignupEmail::newSignupEmail($email);
             $success = $emailObj->saveToDB(true);
             $this->response->setStatus($success ? 1 : 0);
+            if ($success) {
+                $emailObj->setInviteCode();
+                $this->response->setData($emailObj->getValue('invite_code'));
+            }
         } else {
             $this->setError('That email is already signed up!');
         }
@@ -266,7 +270,7 @@ class Api {
             });
             $top_identities = [];
             for ($i=0; $i<3; $i++) {
-                $top_identities[] = $identities[count($identities)-$i-1]->getDimension()->getValues();
+                $top_identities[] = $identities[count($identities)-$i-1]->getDimension()->getValues(true);
             }
             $returnMatch['top_identities'] = $top_identities;
             $preferences = Preference::getAllPreferences($match->getValue('id'));
@@ -275,7 +279,7 @@ class Api {
             });
             $top_preferences = [];
             for ($i=0; $i<3; $i++) {
-                $top_preferences[] = $preferences[count($preferences)-$i-1]->getDimension()->getValues();
+                $top_preferences[] = $preferences[count($preferences)-$i-1]->getDimension()->getValues(true);
             }
             $returnMatch['top_preferences'] = $top_preferences;
             $returnMatches[] = $returnMatch;

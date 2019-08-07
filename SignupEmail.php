@@ -59,4 +59,9 @@ class SignupEmail extends DBObject {
         return $emailObject;
     }
 
+    public function setInviteCode() {
+        $this->setValue('invite_code','*'
+            .md5($this->getValue('id').$this->getValue('email').$this->getValue('signup_time')),true);
+    }
+
 }
