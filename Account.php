@@ -37,6 +37,17 @@ class Account extends DBObject {
         return $emailObject;
     }
 
+    static function getBySignupEmail($signup_email_id) {
+        $db = DBConnectionFactory::Instance();
+        $records = $db->select(Account::$tableName,[self::$columns['signupEmail_id']['name'] => $signup_email_id]);
+        $emailObject = false;
+        if (count($records)>=1) {
+            $emailObject = new Account($records[0],true);
+        }
+        error_log('emailobject: '.json_encode($emailObject));
+        return $emailObject;
+    }
+
     static function newAccount($email,$password_hash,$signupEmail_id=null) {
         $email = strtolower($email);
         $values = ['email'=>$email,'password_hash'=>$password_hash,'signupEmail_id'=>$signupEmail_id];

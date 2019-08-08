@@ -112,7 +112,12 @@ class Api {
                 $this->response->setData($emailObj->getValue('invite_code'));
             }
         } else {
-            $this->setError('That email is already signed up!');
+            if (Account::getBySignupEmail($emailObj->getValue('id'))) {
+                $this->setError('An account already exists for that email!');
+            } else {
+                $this->response->setData($emailObj->getValue('invite_code'));
+                $this->setError('That email is already signed up!');
+            }
         }
     }
 
@@ -135,6 +140,8 @@ class Api {
         if (!$accountObj) {
             $accountObj = Account::newAccount($email,$password_hash);
             $success = $accountObj->saveToDB();
+            $emailObj = SignupEmail::getEmailObject($email);
+            $accountObj->setValue('signupEmail_id',$emailObj->getValue('id'),true);
             $profileObj = Profile::newProfie($accountObj);
             $initial_name = explode('@',$email)[0];
             $profileObj->setValue(Profile::getColumns()['preferred_name']['name'],$initial_name);
