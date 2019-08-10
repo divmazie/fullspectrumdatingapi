@@ -13,7 +13,8 @@ class Profile extends DBObject
         'id'=>['name'=>'id','primary_key'=>true],
         'account_id'=>['name'=>'account_id', 'foreign_key'=>true, 'foreign_table' => Account::class],
         'preferred_name'=>['name'=>'preferred_name'],
-        'birthday'=>['name'=>'birthday']
+        'birthday'=>['name'=>'birthday'],
+        'contact'=>['name'=>'contact']
     ];
     static function getColumns() {
         return self::$columns;

@@ -85,7 +85,7 @@ class Api {
             case 'get-matches': $this->getMatches(); break;
             case 'get-match': $this->getMatch(); break;
             case 'user-profile': $this->getUserProfile(); break;
-            case 'save-preferred-name': $this->savePreferredName(); break;
+            case 'save-profile': $this->saveProfile(); break;
             default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
     }
@@ -303,13 +303,24 @@ class Api {
         $profile = Profile::getObjectById($this->session->getValue('profile'),Profile::class);
         $match = Profile::getObjectById($this->passedData,Profile::class);
         $match_identities = Identity::getAllIdentities($match->getValue('id'),$dimensions);
+        usort($match_identities,function($a,$b) {
+            return $b->vectorValue() - $a->vectorValue();
+        });
+        $top_identities = [];
         $match_preferences = Preference::getAllPreferences($match->getValue('id'),$dimensions);
+        usort($match_preferences,function($a,$b) {
+            return $b->vectorValue() - $a->vectorValue();
+        });
+        $top_preferences = [];
         $profile_identities = Identity::getAllIdentities($profile->getValue('id'),$dimensions);
         $profile_preferences = Preference::getAllPreferences($profile->getValue('id'),$dimensions);
         $youLikeThem = [];
         $theyLikeYou = [];
         $youNotLikeThem = [];
         foreach ($match_identities as $them) {
+            if (count($top_identities)<3) {
+                $top_identities[] = $them->getDimension()->getValues(true);
+            }
             foreach ($profile_preferences as $you) {
                 if ($you->getValue('dimension_id') == $them->getValue('dimension_id')) {
                     break;
@@ -328,6 +339,9 @@ class Api {
         }
         foreach ($profile_identities as $you) {
             foreach ($match_preferences as $them) {
+                if (count($top_preferences)<3) {
+                    $top_preferences[] = $them->getDimension()->getValues(true);
+                }
                 if ($you->getValue('dimension_id') == $them->getValue('dimension_id')) {
                     break;
                 }
@@ -341,6 +355,8 @@ class Api {
         }
         $this->response->setStatus(1);
         $resp_data = ['match'=>$match->getValues(),
+            'top_identities' => $top_identities,
+            'top_preferences' => $top_preferences,
             'theyLikeYou' => $theyLikeYou,
             'youLikeThem' => $youLikeThem,
             'youNotLikeThem' => $youNotLikeThem];
@@ -356,12 +372,14 @@ class Api {
         $this->response->setData($profile->getValues());
     }
 
-    private function savePreferredName() {
+    private function saveProfile() {
         if (!$this->authenticated()) {
             return false;
         }
         $profile = Profile::getObjectById($this->session->getValue('profile'),Profile::class);
-        $profile->setValue('preferred_name',$this->passedData,true);
+        foreach ($this->passedData as $key => $val) {
+            $profile->setValue($key,$val,true);
+        }
         $this->response->setStatus(1);
         $this->response->setData($profile->getValues());
     }
