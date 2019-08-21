@@ -81,7 +81,7 @@ final class DBConnectionFactory {
         $sql = "UPDATE $table SET ";
         $first = true;
         foreach ($values as $key=>$val) {
-            if (!empty($val) && $key!=$primary['key']) {
+            if (isset($val) && $key!=$primary['key']) {
                 $sql .= ($first ? '' : ', ') . $this->escape($key) . "='" . $this->escape($val) . "'";
                 $first = false;
             }

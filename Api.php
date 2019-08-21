@@ -85,6 +85,7 @@ class Api {
             case 'get-matches': $this->getMatches(); break;
             case 'get-match': $this->getMatch(); break;
             case 'user-profile': $this->getUserProfile(); break;
+            case 'user-profile-match': $this->getSelfAsMatch(); break;
             case 'save-profile': $this->saveProfile(); break;
             default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
@@ -270,38 +271,43 @@ class Api {
         $returnMatches = [];
         $matches = Profile::getMatches();
         foreach ($matches as $match) {
-            $returnMatch = $match->getValues();
-            $identities = Identity::getAllIdentities($match->getValue('id'));
-            usort($identities,function($a,$b) {
-                return $a->vectorValue() - $b->vectorValue();
-            });
-            $top_identities = [];
-            for ($i=0; $i<3; $i++) {
-                $top_identities[] = $identities[count($identities)-$i-1]->getDimension()->getValues(true);
+            if ($this->session->getValue('profile') != $match->getValue('id')) {
+                $returnMatch = $match->getValues();
+                $identities = Identity::getAllIdentities($match->getValue('id'));
+                usort($identities, function ($a, $b) {
+                    return $a->vectorValue() - $b->vectorValue();
+                });
+                $top_identities = [];
+                for ($i = 0; $i < 3; $i++) {
+                    $top_identities[] = $identities[count($identities) - $i - 1]->getDimension()->getValues(true);
+                }
+                $returnMatch['top_identities'] = $top_identities;
+                $preferences = Preference::getAllPreferences($match->getValue('id'));
+                usort($preferences, function ($a, $b) {
+                    return $a->vectorValue() - $b->vectorValue();
+                });
+                $top_preferences = [];
+                for ($i = 0; $i < 3; $i++) {
+                    $top_preferences[] = $preferences[count($preferences) - $i - 1]->getDimension()->getValues(true);
+                }
+                $returnMatch['top_preferences'] = $top_preferences;
+                $returnMatches[] = $returnMatch;
             }
-            $returnMatch['top_identities'] = $top_identities;
-            $preferences = Preference::getAllPreferences($match->getValue('id'));
-            usort($preferences,function($a,$b) {
-                return $a->vectorValue() - $b->vectorValue();
-            });
-            $top_preferences = [];
-            for ($i=0; $i<3; $i++) {
-                $top_preferences[] = $preferences[count($preferences)-$i-1]->getDimension()->getValues(true);
-            }
-            $returnMatch['top_preferences'] = $top_preferences;
-            $returnMatches[] = $returnMatch;
         }
         $this->response->setStatus(1);
         $this->response->setData(['matches'=>$returnMatches]);
     }
 
-    private function getMatch() {
+    private function getMatch($profile_id=false) {
+        if (!$profile_id) {
+            $profile_id = $this->passedData;
+        }
         if (!$this->authenticated()) {
             return false;
         }
         $dimensions = Dimension::getDimensions();
         $profile = Profile::getObjectById($this->session->getValue('profile'),Profile::class);
-        $match = Profile::getObjectById($this->passedData,Profile::class);
+        $match = Profile::getObjectById($profile_id,Profile::class);
         $match_identities = Identity::getAllIdentities($match->getValue('id'),$dimensions);
         usort($match_identities,function($a,$b) {
             return $b->vectorValue() - $a->vectorValue();
@@ -363,6 +369,10 @@ class Api {
         $this->response->setData($resp_data);
     }
 
+    private function getSelfAsMatch() {
+        $this->getMatch($this->session->getValue('profile'));
+    }
+
     private function getUserProfile() {
         if (!$this->authenticated()) {
             return false;
@@ -380,8 +390,7 @@ class Api {
         foreach ($this->passedData as $key => $val) {
             $profile->setValue($key,$val,true);
         }
-        $this->response->setStatus(1);
-        $this->response->setData($profile->getValues());
+        $this->getSelfAsMatch();
     }
 
 }
