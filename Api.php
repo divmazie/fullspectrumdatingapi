@@ -147,6 +147,8 @@ class Api {
             $initial_name = explode('@',$email)[0];
             $profileObj->setValue(Profile::getColumns()['preferred_name']['name'],$initial_name);
             $profileObj->saveToDB();
+            $profile_identities = Identity::getAllIdentities($profileObj->getValue('id'));
+            $profile_preferences = Preference::getAllPreferences($profileObj->getValue('id'));
             $this->response->setData(['id'=> $accountObj->getValue('id')]);
             $this->response->setStatus($success ? 1 : 0);
         } else {
