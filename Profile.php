@@ -15,7 +15,11 @@ class Profile extends DBObject
         'preferred_name'=>['name'=>'preferred_name'],
         'birthday'=>['name'=>'birthday'],
         'picture_file'=>['name'=>'picture_file'],
-        'contact'=>['name'=>'contact']
+        'contact'=>['name'=>'contact'],
+        'bioline'=>['name'=>'bioline'],
+        'bio1'=>['name'=>'bio1'],
+        'bio2'=>['name'=>'bio2'],
+        'bio3'=>['name'=>'bio3']
     ];
     static function getColumns() {
         return self::$columns;
