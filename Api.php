@@ -275,13 +275,20 @@ class Api {
         foreach ($matches as $match) {
             if ($this->session->getValue('profile') != $match->getValue('id')) {
                 $returnMatch = $match->getValues();
+                if (!$returnMatch['picture_file']) {
+                    $returnMatch['picture_file'] = 'vitruvian-man.jpg';
+                }
                 $identities = Identity::getAllIdentities($match->getValue('id'));
                 usort($identities, function ($a, $b) {
                     return $a->vectorValue() - $b->vectorValue();
                 });
                 $top_identities = [];
                 for ($i = 0; $i < 3; $i++) {
-                    $top_identities[] = $identities[count($identities) - $i - 1]->getDimension()->getValues(true);
+                    $id = $identities[count($identities) - $i - 1];
+                    if ($id->vectorValue() != 0) {
+                        $top_identities[] = $id->getDimension()->getValues(true);
+
+                    }
                 }
                 $returnMatch['top_identities'] = $top_identities;
                 $preferences = Preference::getAllPreferences($match->getValue('id'));
@@ -290,7 +297,10 @@ class Api {
                 });
                 $top_preferences = [];
                 for ($i = 0; $i < 3; $i++) {
-                    $top_preferences[] = $preferences[count($preferences) - $i - 1]->getDimension()->getValues(true);
+                    $pref = $preferences[count($preferences) - $i - 1];
+                    if ($pref->vectorValue() != 0) {
+                        $top_preferences[] = $pref->getDimension()->getValues(true);
+                    }
                 }
                 $returnMatch['top_preferences'] = $top_preferences;
                 $returnMatches[] = $returnMatch;
@@ -361,14 +371,24 @@ class Api {
                     'not' => $you->vectorValue()<0];
             }
         }
-        $this->response->setStatus(1);
-        $resp_data = ['match'=>$match->getValues(),
+        // Calculate age
+        $date = new DateTime($match->getValue('birthday'));
+        $now = new DateTime();
+        $interval = $now->diff($date);
+        $age = $interval->y;
+        $match_data = $match->getValues();
+        $match_data['age'] = $age;
+        if (!$match_data['picture_file']) {
+            $match_data['picture_file'] = 'vitruvian-man.jpg';
+        }
+        $resp_data = ['match'=>$match_data,
             'top_identities' => $top_identities,
             'top_preferences' => $top_preferences,
             'theyLikeYou' => $theyLikeYou,
             'youLikeThem' => $youLikeThem,
             'youNotLikeThem' => $youNotLikeThem];
         $this->response->setData($resp_data);
+        $this->response->setStatus(1);
     }
 
     private function getSelfAsMatch() {

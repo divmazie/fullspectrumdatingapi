@@ -14,6 +14,7 @@ class Profile extends DBObject
         'account_id'=>['name'=>'account_id', 'foreign_key'=>true, 'foreign_table' => Account::class],
         'preferred_name'=>['name'=>'preferred_name'],
         'birthday'=>['name'=>'birthday'],
+        'picture_file'=>['name'=>'picture_file'],
         'contact'=>['name'=>'contact']
     ];
     static function getColumns() {
