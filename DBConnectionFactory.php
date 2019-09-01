@@ -45,6 +45,7 @@ final class DBConnectionFactory {
             }
         }
         $result = $this->conn->query($sql);
+        $this->logError();
         $rows = [];
         while($result && $row = $result->fetch_assoc()) {
             $rows[] = $row;
@@ -73,6 +74,7 @@ final class DBConnectionFactory {
         $sql .= ')';
         //error_log('SQL: '.$sql);
         $result = $this->conn->query($sql);
+        $this->logError();
         return $result;
     }
 
@@ -88,11 +90,18 @@ final class DBConnectionFactory {
         }
         $sql .= " WHERE ".$this->escape($primary['key'])."=".$this->escape($primary['value']);
         $result = $this->conn->query($sql);
+        $this->logError();
         return $result;
     }
 
     public function lastInsertId() {
         return $this->conn->insert_id;
+    }
+
+    private function logError() {
+        if (mysqli_error($this->conn) !== "") {
+            error_log("SQL error: " . mysqli_error($this->conn));
+        }
     }
 
 }
