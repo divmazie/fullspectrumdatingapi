@@ -15,6 +15,7 @@ class Profile extends DBObject
         'preferred_name'=>['name'=>'preferred_name'],
         'birthday'=>['name'=>'birthday'],
         'picture_file'=>['name'=>'picture_file'],
+        'nyc'=>['name'=>'nyc'],
         'contact'=>['name'=>'contact'],
         'bioline'=>['name'=>'bioline'],
         'bio1'=>['name'=>'bio1'],
