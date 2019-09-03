@@ -272,42 +272,61 @@ class Api {
         }
         $returnMatches = [];
         $matches = Profile::getMatches();
+        $dimensions_objs = Dimension::getDimensions();
+        $ids_file = fopen("python/ids.csv","w");
+        $preferences_file = fopen("python/preferences.csv","w");
+        $identities_file = fopen("python/identities.csv","w");
         foreach ($matches as $match) {
-            if ($this->session->getValue('profile') != $match->getValue('id')) {
-                $returnMatch = $match->getValues();
-                if (!$returnMatch['picture_file']) {
-                    $returnMatch['picture_file'] = 'vitruvian-man.jpg';
-                }
-                $identities = Identity::getAllIdentities($match->getValue('id'));
-                usort($identities, function ($a, $b) {
-                    return $a->vectorValue() - $b->vectorValue();
-                });
-                $top_identities = [];
-                for ($i = 0; $i < 3; $i++) {
-                    $id = $identities[count($identities) - $i - 1];
-                    if ($id->vectorValue() != 0) {
-                        $top_identities[] = $id->getDimension()->getValues(true);
+            fputcsv($ids_file,[$match->getValue('id')]);
+            $returnMatch = $match->getValues();
+            if (!$returnMatch['picture_file']) {
+                $returnMatch['picture_file'] = 'vitruvian-man.jpg';
+            }
+            $identities = Identity::getAllIdentities($match->getValue('id'),$dimensions_objs);
+            fputcsv($identities_file, array_map(function($obj){ return $obj->vectorValue(); }, $identities));
+            usort($identities, function ($a, $b) {
+                return $a->vectorValue() - $b->vectorValue();
+            });
+            $top_identities = [];
+            for ($i = 0; $i < 3; $i++) {
+                $id = $identities[count($identities) - $i - 1];
+                if ($id->vectorValue() != 0) {
+                    $top_identities[] = $id->getDimension()->getValues(true);
 
-                    }
                 }
-                $returnMatch['top_identities'] = $top_identities;
-                $preferences = Preference::getAllPreferences($match->getValue('id'));
-                usort($preferences, function ($a, $b) {
-                    return $a->vectorValue() - $b->vectorValue();
-                });
-                $top_preferences = [];
-                for ($i = 0; $i < 3; $i++) {
-                    $pref = $preferences[count($preferences) - $i - 1];
-                    if ($pref->vectorValue() != 0) {
-                        $top_preferences[] = $pref->getDimension()->getValues(true);
-                    }
+            }
+            $returnMatch['top_identities'] = $top_identities;
+            $preferences = Preference::getAllPreferences($match->getValue('id'),$dimensions_objs);
+            fputcsv($preferences_file, array_map(function($obj){ return $obj->vectorValue(); }, $preferences));
+            usort($preferences, function ($a, $b) {
+                return $a->vectorValue() - $b->vectorValue();
+            });
+            $top_preferences = [];
+            for ($i = 0; $i < 3; $i++) {
+                $pref = $preferences[count($preferences) - $i - 1];
+                if ($pref->vectorValue() != 0) {
+                    $top_preferences[] = $pref->getDimension()->getValues(true);
                 }
-                $returnMatch['top_preferences'] = $top_preferences;
+            }
+            $returnMatch['top_preferences'] = $top_preferences;
+            if ($this->session->getValue('profile') != $match->getValue('id')) {
                 $returnMatches[] = $returnMatch;
             }
         }
+        fclose($ids_file);
+        fclose($preferences_file);
+        fclose($identities_file);
+        $cosines = shell_exec('python python/match_cosine.py '.$this->session->getValue('profile'));
+        $cosines = explode("\n",$cosines);
+        $cosines = array_map(function($obj){ return json_decode($obj); }, $cosines);
+        $match_scores = [];
+        for ($i=0; $i<count($cosines[0]); $i++) {
+            $match_scores[$cosines[0][$i]] = ['myprefs'=>$cosines[1][$i], 'theirprefs'=>$cosines[2][$i]];
+        }
+        //$parsed_cosines = json_decode($cosines);
+        error_log(json_encode($cosines));
         $this->response->setStatus(1);
-        $this->response->setData(['matches'=>$returnMatches]);
+        $this->response->setData(['matches'=>$returnMatches, 'cosines'=>json_encode($match_scores)]);
     }
 
     private function getMatch($profile_id=false) {
