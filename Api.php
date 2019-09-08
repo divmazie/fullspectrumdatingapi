@@ -316,7 +316,9 @@ class Api {
         fclose($ids_file);
         fclose($preferences_file);
         fclose($identities_file);
-        $cosines = shell_exec('python python/match_cosine.py '.$this->session->getValue('profile'));
+        $configs = include('config.php');
+        $python = $configs['python'];
+        $cosines = shell_exec($python.' python/match_cosine.py '.$this->session->getValue('profile').' 2>&1');
         $cosines = explode("\n",$cosines);
         $cosines = array_map(function($obj){ return json_decode($obj); }, $cosines);
         $match_scores = [];
