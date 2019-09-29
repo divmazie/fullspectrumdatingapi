@@ -59,6 +59,17 @@ class SignupEmail extends DBObject {
         return $emailObject;
     }
 
+    public function invite() {
+        $this->setInviteCode();
+        $emailer = EmailSenderFactory::Instance();
+        if ($emailer->sendInviteEmail($this)) {
+            $this->setValue('invited_time', date('Y-m-d G:i:s'), true);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public function setInviteCode() {
         $this->setValue('invite_code','*'
             .md5($this->getValue('id').$this->getValue('email').$this->getValue('signup_time')),true);

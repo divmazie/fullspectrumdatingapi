@@ -42,9 +42,7 @@ class Api {
 
     private function authenticated() {
         if ($this->session !== false) {
-            if ($this->session->getValue('session_hash') === $this->session_info->hash
-                && $this->session->getValue('ip_address') === $this->ip_address
-                && $this->session->getValue('active') === '1') {
+            if ($this->session->isValid($this->session_info->hash, $this->ip_address)) {
                 return true;
             }
         }
@@ -57,6 +55,7 @@ class Api {
             case 'get-all': $this->signupEmailsGetAll(); break;
             case 'save': $this->signupEmailSave(); break;
             case 'get-by-invite-code': $this->signupEmailGetByInviteCode(); break;
+            case 'reset-password': $this->resetPassword(); break;
             default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
     }
@@ -134,6 +133,17 @@ class Api {
         }
     }
 
+    private function resetPassword() {
+        $email = $this->passedData;
+        $signupEmail = SignupEmail::getEmailObject($email);
+        $emailer = EmailSenderFactory::Instance();
+        if ($emailer->sendPasswordResetEmail($signupEmail)) {
+            $this->response->setStatus(1);
+        } else {
+            $this->response->setStatus(0);
+        }
+    }
+
     private function accountCreate() {
         $email = $this->passedData->email;
         $password_hash = $this->passedData->password_hash;
@@ -149,10 +159,13 @@ class Api {
             $profileObj->saveToDB();
             $profile_identities = Identity::getAllIdentities($profileObj->getValue('id'));
             $profile_preferences = Preference::getAllPreferences($profileObj->getValue('id'));
-            $this->response->setData(['id'=> $accountObj->getValue('id')]);
+            $this->response->setData(['id'=> $accountObj->getValue('id'), 'new_profile'=>true]);
             $this->response->setStatus($success ? 1 : 0);
         } else {
-            $this->setError('Account already exists');
+            $accountObj->setValue('password_hash', $password_hash, true);
+            $this->response->setData(['id'=> $accountObj->getValue('id'),'new_profile'=>false]);
+            $this->response->setStatus(1);
+            // $this->setError('Account already exists');
         }
     }
 
@@ -283,33 +296,33 @@ class Api {
                 $returnMatch['picture_file'] = 'vitruvian-man.jpg';
             }
             $identities = Identity::getAllIdentities($match->getValue('id'),$dimensions_objs);
-            fputcsv($identities_file, array_map(function($obj){ return $obj->vectorValue(); }, $identities));
+            fputcsv($identities_file, array_map(function($obj){ return $obj->vectorValue()**3; }, $identities));
             usort($identities, function ($a, $b) {
-                return $a->vectorValue() - $b->vectorValue();
+                return $b->vectorValue() - $a->vectorValue();
             });
             $top_identities = [];
-            for ($i = 0; $i < 3; $i++) {
-                $id = $identities[count($identities) - $i - 1];
-                if ($id->vectorValue() != 0) {
+            foreach ($identities as $id) {
+                if (count($top_identities)<3 && $id->vectorValue()>0) {
                     $top_identities[] = $id->getDimension()->getValues(true);
 
                 }
             }
             $returnMatch['top_identities'] = $top_identities;
             $preferences = Preference::getAllPreferences($match->getValue('id'),$dimensions_objs);
-            fputcsv($preferences_file, array_map(function($obj){ return $obj->vectorValue(); }, $preferences));
+            fputcsv($preferences_file, array_map(function($obj){ return $obj->vectorValue()**3; }, $preferences));
             usort($preferences, function ($a, $b) {
-                return $a->vectorValue() - $b->vectorValue();
+                return $b->vectorValue() - $a->vectorValue();
             });
             $top_preferences = [];
-            for ($i = 0; $i < 3; $i++) {
-                $pref = $preferences[count($preferences) - $i - 1];
-                if ($pref->vectorValue() != 0) {
+            foreach ($preferences as $pref) {
+                if (count($top_preferences)<3 && $pref->vectorValue()>0) {
                     $top_preferences[] = $pref->getDimension()->getValues(true);
                 }
             }
             $returnMatch['top_preferences'] = $top_preferences;
-            if ($this->session->getValue('profile') != $match->getValue('id')) {
+            $myProfile = Profile::getObjectById($this->session->getValue('profile'),Profile::class);
+            if ($myProfile->getValue('id') != $match->getValue('id')
+                && (is_null($match->getValue('nyc')) || $match->getValue('nyc')==$myProfile->getValue('nyc'))) {
                 $returnMatches[] = $returnMatch;
             }
         }
@@ -319,6 +332,8 @@ class Api {
         $configs = include('config.php');
         $python = $configs['python'];
         $cosines = shell_exec($python.' python/match_cosine.py '.$this->session->getValue('profile').' 2>&1');
+        // $cosines = shell_exec($pthon.' --version 2>&1');
+        error_log(json_encode($cosines));
         $cosines = explode("\n",$cosines);
         $cosines = array_map(function($obj){ return json_decode($obj); }, $cosines);
         $match_scores = [];
@@ -357,7 +372,7 @@ class Api {
         $theyLikeYou = [];
         $youNotLikeThem = [];
         foreach ($match_identities as $them) {
-            if (count($top_identities)<3) {
+            if (count($top_identities)<3 && $them->vectorValue()>0) {
                 $top_identities[] = $them->getDimension()->getValues(true);
             }
             foreach ($profile_preferences as $you) {

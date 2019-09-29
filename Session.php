@@ -33,12 +33,29 @@ class Session extends DBObject
     static function getSessionObj($session_id) {
         $db = DBConnectionFactory::Instance();
         $values = [self::$columns['id']['name'] => $session_id];
-        $records = $db->select(Account::$tableName,$values);
+        $records = $db->select(Session::$tableName,$values);
         $sessionObj = false;
         if (count($records)>=1) {
-            $sessionObj = new Account($records[0],true);
+            $sessionObj = new Session($records[0],true);
         }
         return $sessionObj;
+    }
+
+    static function getByHash($hash) {
+        $db = DBConnectionFactory::Instance();
+        $values = [self::$columns['session_hash']['name'] => $hash];
+        $records = $db->select(Session::$tableName,$values);
+        $sessionObj = false;
+        if (count($records)>=1) {
+            $sessionObj = new Session($records[0],true);
+        }
+        return $sessionObj;
+    }
+
+    public function isValid($hash,$ip_address) {
+        return ($this->getValue('session_hash') === $hash
+            && $this->getValue('ip_address') === $ip_address
+            && $this->getValue('active') === '1');
     }
 
 
