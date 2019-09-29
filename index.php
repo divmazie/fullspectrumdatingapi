@@ -3,7 +3,7 @@ spl_autoload_register(function ($class_name) {
     include $class_name . '.php';
 });
 
-$allowed_origins = ["http://fullspectrumdating.com","http://localhost:4200","http://humanforhuman.net"];
+$allowed_origins = ["http://fullspectrumdating.com","http://localhost:4200","http://humanforhuman.net","https://humanforhuman.net"];
 
 if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'],$allowed_origins)) {
     header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
