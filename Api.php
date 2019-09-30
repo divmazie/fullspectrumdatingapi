@@ -331,7 +331,10 @@ class Api {
         fclose($identities_file);
         $configs = include('config.php');
         $python = $configs['python'];
-        $cosines = shell_exec($python.' python/match_cosine.py '.$this->session->getValue('profile').' 2>&1');
+        shell_exec('export OMP_NUM_THREADS=1');
+        shell_exec('export OPENBLAS_NUM_THREADS=1');
+        shell_exec('export USE_SIMPLE_THREADED_LEVEL3=1');
+        $cosines = shell_exec(''.$python.' python/match_cosine.py '.$this->session->getValue('profile').' 2>&1');
         // $cosines = shell_exec($pthon.' --version 2>&1');
         error_log(json_encode($cosines));
         $cosines = explode("\n",$cosines);

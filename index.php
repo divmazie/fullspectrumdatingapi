@@ -1,15 +1,21 @@
 <?php
-spl_autoload_register(function ($class_name) {
-    include $class_name . '.php';
-});
-
+/*
+header("Access-Control-Allow-Origin: *" );
+// header("Access-Control-Allow-Origin: http://localhost:4200" );
 $allowed_origins = ["http://fullspectrumdating.com","http://localhost:4200","http://humanforhuman.net","https://humanforhuman.net"];
-
+error_log(json_encode($_SERVER['HTTP_ORIGIN']));
 if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'],$allowed_origins)) {
     header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
 }
 header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
+*/
 header('Content-Type: application/json');
+
+
+spl_autoload_register(function ($class_name) {
+    include $class_name . '.php';
+});
+
 $response = ['status' => 0];
 
 error_log('Index touched');
