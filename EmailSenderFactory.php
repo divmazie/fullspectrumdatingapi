@@ -52,9 +52,11 @@ class EmailSenderFactory {
 
     public function sendInviteEmail($signupEmail) {
         $subject = "Welcome to Human For Human alpha!";
-        $invite_link = "http://humanforhuman.net/newuser/".str_replace('*','',$signupEmail->getValue('invite_code'));
+        $invite_link = "https://humanforhuman.net/newuser/".str_replace('*','',$signupEmail->getValue('invite_code'));
+        $signup_date = date('F j, Y', strtotime($signupEmail->getValue('signup_time')));
         $content = file_get_contents(__DIR__ . '/email_templates/invite_email.html');
         $content = str_replace("{{invite_link}}", $invite_link, $content);
+        $content = str_replace('{{signup_date}}', $signup_date, $content);
         return $this->sendEmail($signupEmail->getValue('email'), $subject, $content);
     }
 
