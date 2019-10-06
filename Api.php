@@ -204,7 +204,7 @@ class Api {
         $dimensions = [];
         $dimension_categories = [];
         foreach ($dimensions_objs as $dim) {
-            $dimensions[] = $dim->getValues();
+            $dimensions[] = $dim->getValues(true);
         }
         foreach ($dimension_categories_objs as $dim_cat) {
             $dimension_categories[] = $dim_cat->getValues();
