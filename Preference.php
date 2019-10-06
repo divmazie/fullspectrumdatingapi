@@ -54,6 +54,8 @@ class Preference extends DBObject {
                 $preference_lookup[$dimension_id] = $preference;
             }
         }
+        // THIS IS HACK! ORM should be robust enough to not create dupes.
+        Preference::deleteDuplicates();
         return $preferences;
     }
 
@@ -63,6 +65,20 @@ class Preference extends DBObject {
 
     public function vectorValue() {
         return $this->getValue('yesNo')*$this->getValue('slider');
+    }
+
+    private static function deleteDuplicates() {
+        $db = DBConnectionFactory::Instance();
+        $sql = "DELETE FROM preferences
+            WHERE id NOT IN (
+                SELECT *
+                FROM (
+                    SELECT MIN(id) id
+                    FROM preferences
+                    GROUP BY dimension_id, profile_id
+                ) temp
+            )";
+        $db->runQuery($sql);
     }
 
 }

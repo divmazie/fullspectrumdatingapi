@@ -94,6 +94,14 @@ final class DBConnectionFactory {
         return $result;
     }
 
+    // DON'T RUN WITHOUT SANITIZING INPUTS!!!
+    public function runQuery($sql) {
+        // $query = $this->escape();
+        $result = $this->conn->query($sql);
+        $this->logError();
+        return $result;
+    }
+
     public function lastInsertId() {
         return $this->conn->insert_id;
     }
