@@ -19,4 +19,5 @@ if ($_POST['email'] && $_POST['key'] && $_POST['key']==$key) {
     $email = $_POST['emai'];
     $signupEmail = SignupEmail::newSignupEmail($email);
     $signupEmail->invite();
+    error_log('Invite sent to '.$email);
 }
