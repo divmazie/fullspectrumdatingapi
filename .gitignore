@@ -1,2 +1,9 @@
+# JetBrains stuff
+.idea/
+
+# venv
+venv/
+
+# configs
 config.php
 config_server.php
