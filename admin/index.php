@@ -9,17 +9,11 @@ spl_autoload_register(function ($class_name) {
     include '../' . $class_name . '.php';
 });
 
-// Requires 'admin_user' and 'admin_password_hash' (from password_hash()) in config.php; denies everyone if unset
-$configs = include(__DIR__ . '/../config.php');
-$admin_user = isset($configs['admin_user']) ? $configs['admin_user'] : '';
-$admin_password_hash = isset($configs['admin_password_hash']) ? $configs['admin_password_hash'] : '';
-if ($admin_user === '' || $admin_password_hash === ''
-    || !isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])
-    || !hash_equals($admin_user, $_SERVER['PHP_AUTH_USER'])
-    || !password_verify($_SERVER['PHP_AUTH_PW'], $admin_password_hash)) {
-    header('WWW-Authenticate: Basic realm="admin"');
-    http_response_code(401);
-    die('Not authorized');
+// The login itself is enforced by Apache (an .htaccess password on this directory, set up on the server).
+// Apache sets REMOTE_USER once someone has logged in, so refuse to run if it's missing, e.g. the .htaccess was lost
+if (empty($_SERVER['REMOTE_USER']) && empty($_SERVER['REDIRECT_REMOTE_USER'])) {
+    http_response_code(403);
+    die('Not authorized: admin/ must be password protected with .htaccess');
 }
 
 function h($string) {
