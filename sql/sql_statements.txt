@@ -1,0 +1,37 @@
+-- Set invite_code hash for signup_emails
+UPDATE `signup_emails` SET `invite_code`=PASSWORD(CONCAT(`id`,`email`,`signup_time`)), `invited_time`=CURRENT_TIMESTAMP WHERE 'invite_code' IS NULL
+
+
+-- Deleting duplicate prefs
+    SELECT MIN(id) id
+    FROM preferences
+    GROUP BY dimension_id, profile_id HAVING COUNT(*)>1
+
+
+    DELETE FROM identities
+    WHERE id NOT IN (
+        SELECT *
+        FROM (
+    		SELECT MIN(id) id
+        	FROM identities
+        	GROUP BY dimension_id, profile_id
+        ) temp
+    )
+
+    DELETE FROM preferences
+    WHERE id NOT IN (
+        SELECT *
+        FROM (
+    		SELECT MIN(id) id
+        	FROM preferences
+        	GROUP BY dimension_id, profile_id
+        ) temp
+    )
+
+
+-- Switch "Aromantic" to "Romantic"
+    UPDATE preferences SET yesNo = -1 WHERE dimension_id = 20 AND yesNo = 1;
+    UPDATE preferences SET yesNo = 1 WHERE dimension_id = 20 AND yesNo = -1;
+    UPDATE identities SET yesNo = -1 WHERE dimension_id = 20 AND yesNo = 1;
+    UPDATE identities SET yesNo = 1 WHERE dimension_id = 20 AND yesNo = -1;
+    UPDATE `dimensions` SET `name` = 'Romantic' WHERE `dimensions`.`id` = 20;
