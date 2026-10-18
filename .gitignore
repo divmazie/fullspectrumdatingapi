@@ -7,3 +7,16 @@ venv/
 # configs
 config.php
 config_server.php
+
+.DS_Store
+.env
+.htaccess
+admin/.htaccess
+admin/.htpasswd
+
+pictures/*
+python/*.csv
+get-pip.py
+python/get-pip.py
+
+SQL/backups/*
