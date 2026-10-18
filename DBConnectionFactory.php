@@ -88,7 +88,7 @@ final class DBConnectionFactory {
                 $first = false;
             }
         }
-        $sql .= " WHERE ".$this->escape($primary['key'])."=".$this->escape($primary['value']);
+        $sql .= " WHERE ".$this->escape($primary['key'])."='".$this->escape($primary['value'])."'";
         $result = $this->conn->query($sql);
         $this->logError();
         return $result;

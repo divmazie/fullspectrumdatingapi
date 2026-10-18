@@ -52,7 +52,6 @@ class Api {
 
     private function signupEmailsResource() {
         switch ($this->resource[1]) {
-            case 'get-all': $this->signupEmailsGetAll(); break;
             case 'save': $this->signupEmailSave(); break;
             case 'get-by-invite-code': $this->signupEmailGetByInviteCode(); break;
             case 'reset-password': $this->resetPassword(); break;
@@ -88,16 +87,6 @@ class Api {
             case 'save-profile': $this->saveProfile(); break;
             default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
-    }
-
-    private function signupEmailsGetAll() {
-        $emails = SignupEmail::getAllSignupEmails();
-        $return_vals = [];
-        foreach ($emails as $email) {
-            $return_vals[] = $email->getValues();
-        }
-        $this->response->setStatus(1);
-        $this->response->setData($return_vals);
     }
 
     private function signupEmailSave() {
@@ -145,13 +134,20 @@ class Api {
     }
 
     private function accountCreate() {
-        $email = $this->passedData->email;
+        $email = strtolower($this->passedData->email);
         $password_hash = $this->passedData->password_hash;
+        // The invite code (also sent in password reset emails) proves the caller controls this email,
+        // so creating an account or setting a new password requires it
+        $invite_code = isset($this->passedData->invite_code) ? $this->passedData->invite_code : '';
+        $emailObj = (is_string($invite_code) && $invite_code !== '') ? SignupEmail::getByInviteCode($invite_code) : false;
+        if (!$emailObj || $emailObj->getValue('email') !== $email) {
+            $this->setError('Invalid invite code');
+            return false;
+        }
         $accountObj = Account::getAccountObj($email);
         if (!$accountObj) {
             $accountObj = Account::newAccount($email,$password_hash);
             $success = $accountObj->saveToDB();
-            $emailObj = SignupEmail::getEmailObject($email);
             $accountObj->setValue('signupEmail_id',$emailObj->getValue('id'),true);
             $profileObj = Profile::newProfie($accountObj);
             $initial_name = explode('@',$email)[0];
@@ -240,10 +236,22 @@ class Api {
         if (!$this->authenticated()) {
             return false;
         }
-        $identity = Identity::getObjectById($this->passedData->id,Identity::class);
-        foreach ($this->passedData as $column => $datum) {
-            $identity->setValue($column,$datum,true);
+        $this->saveOwnDimensionValue(Identity::class);
+    }
+
+    // Identities and preferences share a shape: only let a user change yesNo/slider on their own rows
+    private function saveOwnDimensionValue($class) {
+        $obj = $class::getObjectById($this->passedData->id,$class);
+        if (!$obj || (string)$obj->getValue('profile_id') !== (string)$this->session->getValue('profile')) {
+            $this->setError('Not found');
+            return false;
         }
+        foreach (['yesNo', 'slider'] as $column) {
+            if (isset($this->passedData->$column)) {
+                $obj->setValue($column,$this->passedData->$column);
+            }
+        }
+        return $obj->saveToDB();
     }
 
     private function preferencesGetAll() {
@@ -273,10 +281,7 @@ class Api {
         if (!$this->authenticated()) {
             return false;
         }
-        $preference = Preference::getObjectById($this->passedData->id,Preference::class);
-        foreach ($this->passedData as $column => $datum) {
-            $preference->setValue($column,$datum,true);
-        }
+        $this->saveOwnDimensionValue(Preference::class);
     }
 
     private function getMatches() {
@@ -448,9 +453,14 @@ class Api {
             return false;
         }
         $profile = Profile::getObjectById($this->session->getValue('profile'),Profile::class);
+        // id, account_id and picture_file must never come from the client
+        $editable = ['preferred_name', 'birthday', 'nyc', 'contact', 'bioline', 'bio1', 'bio2', 'bio3'];
         foreach ($this->passedData as $key => $val) {
-            $profile->setValue($key,$val,true);
+            if (in_array($key, $editable, true)) {
+                $profile->setValue($key,$val);
+            }
         }
+        $profile->saveToDB();
         $this->getSelfAsMatch();
     }
 
