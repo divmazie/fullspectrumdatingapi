@@ -11,11 +11,13 @@ spl_autoload_register(function ($class_name) {
 });
 
 error_log('new_patreon_member.php touched');
-error_log('POST = ' . json_encode($_POST));
 
-$key = 'FD1409BC355C9AB81A24E62452164B81B1724C76B8CF17EDE065CFACF7C3483D';
+// The shared key lives in config.php as 'patreon_webhook_key'. Without one, every request is refused
+$configs = include('config.php');
+$key = isset($configs['patreon_webhook_key']) ? $configs['patreon_webhook_key'] : '';
 
-if ($_POST['email'] && $_POST['key'] && $_POST['key']==$key) {
+if ($key !== '' && !empty($_POST['email']) && isset($_POST['key']) && is_string($_POST['key'])
+    && hash_equals($key, $_POST['key'])) {
     $email = $_POST['email'];
     $signupEmail = SignupEmail::newSignupEmail($email);
     $signupEmail->invite();
