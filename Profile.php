@@ -48,16 +48,5 @@ class Profile extends DBObject
         return false;
     }
 
-    static function getMatches() {
-        $db = DBConnectionFactory::Instance();
-        $matches = [];
-        $results = $db->select(Profile::getTableName());
-        foreach ($results as $row) {
-            $profileObj = new Profile($row);
-            $matches[] = $profileObj;
-        }
-        return $matches;
-    }
-
 
 }
