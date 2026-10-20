@@ -29,33 +29,30 @@ class Preference extends DBObject {
     static function getAllPreferences($profile_id,$dimensions=false) {
         $db = DBConnectionFactory::Instance();
         $values = [self::$columns['profile_id']['name']=>$profile_id];
-        $records = $db->select(Preference::$tableName,$values);
         $preferences = [];
-        $preference_lookup = [];
-        foreach($records as $record) {
-            $preference = new Preference($record,true);
-            $preferences[] = $preference;
-            $preference_lookup[$preference->getValue('dimension_id')] = $preference;
+        $existing = [];
+        foreach ($db->select(Preference::$tableName,$values) as $record) {
+            $preferences[] = new Preference($record,true);
+            $existing[$record['dimension_id']] = true;
         }
         if (!$dimensions) {
             $dimensions = Dimension::getDimensions();
         }
+        $missing = [];
         foreach ($dimensions as $dimension) {
-            $dimension_id = $dimension->getValue('id');
-            if (!array_key_exists($dimension_id,$preference_lookup)) {
-                $values = ['profile_id'=>$profile_id,
-                            'dimension_id'=>$dimension_id,
-                            'yesNo'=>0,
-                            'slider'=>1];
-                $preference = new Preference($values,false);
-                //error_log(json_encode($preference->getValues()));
-                $preference->saveToDB();
-                $preferences[] = $preference;
-                $preference_lookup[$dimension_id] = $preference;
+            if (!isset($existing[$dimension->getValue('id')])) {
+                $missing[] = '(' . (int)$profile_id . ',' . (int)$dimension->getValue('id') . ',0,1)';
             }
         }
-        // THIS IS HACK! ORM should be robust enough to not create dupes.
-        Preference::deleteDuplicates();
+        if ($missing) {
+            // Unanswered rows for every new dimension. IGNORE skips rows a concurrent request created first
+            // (the unique profile_id/dimension_id key refuses them), then re-read to get everyone's real ids
+            $db->runQuery("INSERT IGNORE INTO preferences (profile_id, dimension_id, yesNo, slider) VALUES " . implode(',', $missing));
+            $preferences = [];
+            foreach ($db->select(Preference::$tableName,$values) as $record) {
+                $preferences[] = new Preference($record,true);
+            }
+        }
         return $preferences;
     }
 
@@ -65,20 +62,6 @@ class Preference extends DBObject {
 
     public function vectorValue() {
         return $this->getValue('yesNo')*$this->getValue('slider');
-    }
-
-    private static function deleteDuplicates() {
-        $db = DBConnectionFactory::Instance();
-        $sql = "DELETE FROM preferences
-            WHERE id NOT IN (
-                SELECT *
-                FROM (
-                    SELECT MIN(id) id
-                    FROM preferences
-                    GROUP BY dimension_id, profile_id
-                ) temp
-            )";
-        $db->runQuery($sql);
     }
 
 }

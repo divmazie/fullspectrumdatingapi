@@ -95,9 +95,9 @@ final class DBConnectionFactory {
     }
 
     // DON'T RUN WITHOUT SANITIZING INPUTS!!!
-    public function runQuery($sql) {
+    public function runQuery($sql, $resultMode = MYSQLI_STORE_RESULT) {
         // $query = $this->escape();
-        $result = $this->conn->query($sql);
+        $result = $this->conn->query($sql, $resultMode);
         $this->logError();
         return $result;
     }

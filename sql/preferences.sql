@@ -8,7 +8,10 @@ CREATE TABLE `preferences` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 ALTER TABLE `preferences`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `profile_dimension` (`profile_id`,`dimension_id`),
+  ADD KEY `dimension_answer` (`dimension_id`,`yesNo`,`profile_id`,`slider`),
+  ADD KEY `answered` (`yesNo`,`profile_id`,`slider`,`dimension_id`);
 
 ALTER TABLE `preferences`
   MODIFY `id` int(255) NOT NULL AUTO_INCREMENT;

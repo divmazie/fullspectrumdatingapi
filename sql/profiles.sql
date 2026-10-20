@@ -9,7 +9,9 @@ CREATE TABLE `profiles` (
   `bioline` varchar(140) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT 'Human',
   `bio1` varchar(5000) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL,
   `bio2` varchar(5000) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL,
-  `bio3` varchar(5000) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL
+  `bio3` varchar(5000) CHARACTER SET utf8 COLLATE utf8_bin DEFAULT NULL,
+  `identity_norm` double NOT NULL DEFAULT '0',
+  `preference_norm` double NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 ALTER TABLE `profiles`

@@ -29,29 +29,28 @@ class Identity extends DBObject {
     static function getAllIdentities($profile_id,$dimensions=false) {
         $db = DBConnectionFactory::Instance();
         $values = [self::$columns['profile_id']['name']=>$profile_id];
-        $records = $db->select(Identity::$tableName,$values);
         $identities = [];
-        $identity_lookup = [];
-        foreach($records as $record) {
-            $identity = new Identity($record,true);
-            $identities[] = $identity;
-            $identity_lookup[$identity->getValue('dimension_id')] = $identity;
+        $existing = [];
+        foreach ($db->select(Identity::$tableName,$values) as $record) {
+            $identities[] = new Identity($record,true);
+            $existing[$record['dimension_id']] = true;
         }
         if (!$dimensions) {
             $dimensions = Dimension::getDimensions();
         }
+        $missing = [];
         foreach ($dimensions as $dimension) {
-            $dimension_id = $dimension->getValue('id');
-            if (!array_key_exists($dimension_id,$identity_lookup)) {
-                $values = ['profile_id'=>$profile_id,
-                            'dimension_id'=>$dimension_id,
-                            'yesNo'=>0,
-                            'slider'=>1];
-                $identity = new Identity($values,false);
-                //error_log(json_encode($identity->getValues()));
-                $identity->saveToDB();
-                $identities[] = $identity;
-                $identity_lookup[$dimension_id] = $identity;
+            if (!isset($existing[$dimension->getValue('id')])) {
+                $missing[] = '(' . (int)$profile_id . ',' . (int)$dimension->getValue('id') . ',0,1)';
+            }
+        }
+        if ($missing) {
+            // Unanswered rows for every new dimension. IGNORE skips rows a concurrent request created first
+            // (the unique profile_id/dimension_id key refuses them), then re-read to get everyone's real ids
+            $db->runQuery("INSERT IGNORE INTO identities (profile_id, dimension_id, yesNo, slider) VALUES " . implode(',', $missing));
+            $identities = [];
+            foreach ($db->select(Identity::$tableName,$values) as $record) {
+                $identities[] = new Identity($record,true);
             }
         }
         return $identities;
