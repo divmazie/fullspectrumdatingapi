@@ -4,7 +4,8 @@
 // candidate against the reference: the same matches in the same order with the same profile fields, and the
 // same myprefs/theirprefs scores to within float rounding (sliders are stored at single precision).
 // Top identities/preferences are checked against their definition (the 3 strongest positive answers, ties
-// by row id) rather than against the reference, because before #20 they were never actually sorted.
+// by row id) rather than against the reference, because before #20 they were only roughly sorted (PHP
+// truncated the sort's comparison to a whole number, so values less than 1 apart kept their database order).
 //
 // Without viewer ids it picks a mix: profiles with no answers, each nyc setting, and some at random.
 // When porting matching to a new API, adapt fetch() below to its request format.

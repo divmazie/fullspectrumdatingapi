@@ -2,8 +2,9 @@
 // Usage: php gen_profiles.php <profiles> [seed] [answered fraction, default 0.15]
 // Adds random profiles to a test database. Like production, every profile gets a row for every dimension in
 // identities and preferences, mostly unanswered (yesNo = 0); 1 in 20 profiles answers nothing, to exercise
-// empty vectors. nyc is random among NULL, 0 and 1. Each profile also gets a session (id = profile id,
-// token "h<id>", IP 127.0.0.1) so the other scripts can call the API as it, from this machine.
+// empty vectors. Answers are yes or no with a slider from 0 to 10, as in the UI. nyc is random among
+// NULL, 0 and 1. Each profile also gets a session (id = profile id, token "h<id>", IP 127.0.0.1) so the
+// other scripts can call the API as it, from this machine.
 require __DIR__ . '/db.php';
 if (!isset($argv[1])) {
     fwrite(STDERR, "Usage: php gen_profiles.php <profiles> [seed] [answered fraction]\n");
@@ -34,7 +35,8 @@ for ($k = 1; $k <= $n; $k++) {
     foreach ($dims as $d) {
         foreach (['ids', 'prefs'] as $which) {
             $yes = mt_rand() / mt_getrandmax() < $rate ? [1, -1][mt_rand(0, 1)] : 0;
-            $slider = $yes ? mt_rand(1, 100) / 100 : 1;
+            // Answered: 0 to 10 in steps of 0.1, like the UI. Unanswered rows keep the default of 1
+            $slider = $yes ? mt_rand(0, 100) / 10 : 1;
             ${$which}[] = "($p, $d, $yes, $slider)";
         }
     }
