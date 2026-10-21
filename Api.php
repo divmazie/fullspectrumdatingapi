@@ -51,17 +51,19 @@ class Api {
     }
 
     private function signupEmailsResource() {
+        // Signup and password reset are disabled: signup-emails/save hands back the invite code that
+        // accounts/create accepts as proof of email ownership, so anyone could take over any account
         switch ($this->resource[1]) {
-            case 'save': $this->signupEmailSave(); break;
-            case 'get-by-invite-code': $this->signupEmailGetByInviteCode(); break;
-            case 'reset-password': $this->resetPassword(); break;
+            case 'save':
+            case 'get-by-invite-code':
+            case 'reset-password': $this->setError('Signup and password reset are temporarily disabled'); break;
             default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
     }
 
     private function accountsResource() {
         switch ($this->resource[1]) {
-            case 'create': $this->accountCreate(); break;
+            case 'create': $this->setError('Signup and password reset are temporarily disabled'); break;
             case 'signin': $this->accountSignin(); break;
             default: $this->setError('Unrecognized resource: '.$this->resource[1]); break;
         }
