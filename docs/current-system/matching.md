@@ -63,4 +63,4 @@ The rebuild should define these lists once and share the code with `get-matches`
 
 ## Checking a new implementation
 
-The `claude/matching-tests` branch has scripts that generate random profiles, compare two implementations' `get-matches` results to within float rounding, and benchmark them. That's how #20 was checked against the old Python version. As of this writing the branch isn't merged, and its generator uses slider values from 0.01 to 1 rather than the UI's 0–10.
+`tests/matching/` (#28) has scripts that generate random profiles, compare two implementations' `get-matches` results to within float rounding, and benchmark them. That's how #20 was checked against the old Python version.
